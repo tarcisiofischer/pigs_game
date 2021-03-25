@@ -16,12 +16,30 @@ auto constexpr HEIGHT = 18;
 auto constexpr tile_size = 32;
 auto constexpr SCREEN_WIDTH = tile_size * WIDTH;
 auto constexpr SCREEN_HEIGHT = tile_size * HEIGHT;
-auto constexpr player_size_x = 96;
-auto constexpr player_size_y = 96;
 
 auto constexpr gravity = 0.001;
 
 auto constexpr collision_tiles = std::array<int, 10>{1, 3, 12, 14, 15, 25, 27, 37, 38, 39};
+
+std::vector<std::string> debug_messages;
+
+using Tilemap = std::array<std::array<int, WIDTH>, HEIGHT>;
+
+enum class CollisionType {
+    TILEMAP_COLLISION = 0
+};
+
+enum class CollisionSide {
+    LEFT_COLLISION = 0,
+    RIGHT_COLLISION = 1,
+    TOP_COLLISION = 2,
+    BOTTOM_COLLISION = 3
+};
+
+struct Vector2D {
+    double x;
+    double y;
+};
 
 struct Region2D {
     double x;
@@ -30,11 +48,32 @@ struct Region2D {
     double h;
 };
 
-class IGameCharacter {
+struct CollisionRegionInformation
+{
+    Region2D collision_region;
+    Region2D old_collision_region;
+    Vector2D collision_region_offset;
+};
+
+class IGameCharacter
+{
 public:
     virtual void update(double elapsedTime) = 0;
     virtual void run_animation(double elapsedTime) = 0;
+    virtual void set_position(double x, double y) = 0;
+    virtual Vector2D get_position() const = 0;
+    virtual Vector2D get_velocity() const = 0;
+    virtual void set_velocity(double x, double y) = 0;
+    virtual void handle_collision(CollisionType const& type, CollisionSide const& side) = 0;
+    virtual CollisionRegionInformation get_collision_region_information() const = 0;
 };
+
+SDL_Rect to_sdl_rect(Region2D const& region)
+{
+    return SDL_Rect{
+        int(region.x), int(region.y),
+        int(region.w), int(region.h)};
+}
 
 class TransitionAnimation
 {
@@ -128,67 +167,72 @@ inline int random_int(int a, int b)
     return distrib(g);
 }
 
-inline bool check_aabb_collision(double a_x, double a_y, double a_w, double a_h, double b_x, double b_y, double b_w, double b_h)
+inline bool check_aabb_collision(Region2D const& a, Region2D const& b)
 {
     return (
-        a_x < b_x + b_w &&
-        a_x + a_w > b_x &&
-        a_y < b_y + b_h &&
-        a_y + a_h > b_y
+        a.x       < b.x + b.w &&
+        a.x + a.w > b.x       &&
+        a.y       < b.y + b.h &&
+        a.y + a.h > b.y
     );
 }
 
-void compute_collisions(
-    std::array<std::array<int, WIDTH>, HEIGHT> const& tilemap,
-    double player_collision_x, double player_collision_y,
-    double player_collision_w, double player_collision_h,
-    double o_player_collision_x, double o_player_collision_y,
-    double player_collision_offset_x, double player_collision_offset_y,
-    double& pos_x, double& pos_y, double& velocity_x, double& velocity_y,
-    bool& is_grounded
-)
+void compute_tilemap_collisions(Tilemap const& tilemap, IGameCharacter* c)
 {
     for (int i = 0; i < HEIGHT; ++i) {
         for (int j = 0; j < WIDTH; ++j) {
             auto tile_id = tilemap[i][j];
             for (auto&& collision_tile_id : collision_tiles) {
                 if (tile_id == collision_tile_id) {
-                    double tile_x = 32.0 * j;
-                    double tile_y = 32.0 * i;
-                    double tile_w = 32.0;
-                    double tile_h = 32.0;
-                    
-                    if (check_aabb_collision(
-                        player_collision_x, player_collision_y, player_collision_w, player_collision_h,
-                        tile_x, tile_y, tile_w, tile_h
-                    )) {
-                        if (
-                            player_collision_x + player_collision_w > tile_x &&
-                            o_player_collision_x + player_collision_w <= tile_x
-                        ) {
-                            pos_x = tile_x - player_collision_offset_x - player_collision_w - 0.1;
-                            velocity_x = 0.0;
-                        } else if (
-                            player_collision_x < tile_x + tile_w &&
-                            o_player_collision_x >= tile_x + tile_w
-                        ) {
-                            pos_x = tile_x + tile_w - player_collision_offset_x + 0.1;
-                            velocity_x = 0.0;
-                        } else if (
-                            player_collision_y < tile_y + tile_h &&
-                            o_player_collision_y >= tile_y + tile_h
-                        ) {
-                            pos_y = tile_y + tile_h - player_collision_offset_y + 0.1;
-                            velocity_y = 0.0;
+                    auto collision_region_info = c->get_collision_region_information();
+                    auto const& collision_region = collision_region_info.collision_region;
+                    auto const& old_collision_region = collision_region_info.old_collision_region;
+                    auto const& collision_region_offset = collision_region_info.collision_region_offset;
+                    auto current_position = c->get_position();
+                    auto current_velocity = c->get_velocity();
 
-                            velocity_y -= 0.01; // Force response
-                        } else if (
-                            player_collision_y + player_collision_h > tile_y &&
-                            o_player_collision_y + player_collision_h <= tile_y
+                    auto tile_region = Region2D{double(tile_size * j), double(tile_size * i), double(tile_size), double(tile_size)};
+
+                    if (check_aabb_collision(collision_region, tile_region)) {
+                        
+                        debug_messages.push_back("Colliding! on (" + std::to_string(j) + ", " + std::to_string(i) + "): " + std::to_string(tile_region.x) + ", " + std::to_string(tile_region.y));
+                        
+                        if (
+                            collision_region.x + collision_region.w > tile_region.x &&
+                            old_collision_region.x + old_collision_region.w <= tile_region.x
                         ) {
-                            pos_y = tile_y - player_collision_h - player_collision_offset_y - 0.1;
-                            velocity_y = 0.0;
-                            is_grounded = true;
+                            debug_messages.push_back("RIGHT collision found");
+
+                            c->set_position(tile_region.x - collision_region_offset.x - collision_region.w - 0.1, current_position.y);
+                            c->set_velocity(0.0, current_velocity.y);
+
+                            c->handle_collision(CollisionType::TILEMAP_COLLISION, CollisionSide::RIGHT_COLLISION);
+                        } else if (
+                            collision_region.x < tile_region.x + tile_region.w &&
+                            old_collision_region.x >= tile_region.x + tile_region.w
+                        ) {
+                            debug_messages.push_back("LEFT collision found");
+
+                            c->set_position(tile_region.x + tile_region.w - collision_region_offset.x + 0.1, current_position.y);
+                            c->set_velocity(0.0, current_velocity.y);
+
+                            c->handle_collision(CollisionType::TILEMAP_COLLISION, CollisionSide::LEFT_COLLISION);
+                        } else if (
+                            collision_region.y < tile_region.y + tile_region.h &&
+                            old_collision_region.y >= tile_region.y + tile_region.h
+                        ) {
+                            c->set_position(current_position.x, tile_region.y + tile_region.h - collision_region_offset.y + 0.1);
+                            c->set_velocity(current_velocity.x, 0.0);
+
+                            c->handle_collision(CollisionType::TILEMAP_COLLISION, CollisionSide::TOP_COLLISION);
+                        } else if (
+                            collision_region.y + collision_region.h > tile_region.y &&
+                            old_collision_region.y + old_collision_region.h <= tile_region.y
+                        ) {
+                            c->set_position(current_position.x, tile_region.y - collision_region.h - collision_region_offset.y - 0.1);
+                            c->set_velocity(current_velocity.x, 0.0);
+                            
+                            c->handle_collision(CollisionType::TILEMAP_COLLISION, CollisionSide::BOTTOM_COLLISION);
                         }
                     }
                 }
@@ -278,6 +322,11 @@ public:
     static auto constexpr TAKING_DAMAGE_ANIMATION = 2;
     static auto constexpr DYING_ANIMATION = 3;
 
+    static auto constexpr collision_offset_x = 30.0;
+    static auto constexpr collision_offset_y = 30.0;
+    static auto constexpr collision_size_x = 18.0;
+    static auto constexpr collision_size_y = 18.0;
+
     Pig(Pig const& other)
     {
         this->running_side = other.running_side;
@@ -303,7 +352,7 @@ public:
         this->is_dead = other.is_dead;
     }
     
-   virtual ~Pig() {} 
+    virtual ~Pig() {} 
 
     Pig& operator=(Pig const& other)
     {
@@ -401,6 +450,49 @@ public:
 
         this->connect_callbacks();
     }
+
+    void set_position(double x, double y) override
+    {
+        this->pos_x = x;
+        this->pos_y = y;
+    }
+
+    Vector2D get_position() const override
+    {
+        return Vector2D{this->pos_x, this->pos_y};
+    }
+    
+    Vector2D get_velocity() const override
+    {
+        return Vector2D{this->velocity_x, this->velocity_y};
+    }
+    
+    void set_velocity(double x, double y) override
+    {
+        this->velocity_x = x;
+        this->velocity_y = y;
+    }
+
+    CollisionRegionInformation get_collision_region_information() const override
+    {
+        return CollisionRegionInformation{
+            Region2D{
+                this->pos_x + Pig::collision_offset_x,
+                this->pos_y + Pig::collision_offset_y,
+                Pig::collision_size_x,
+                Pig::collision_size_y
+            },
+            Region2D{
+                this->old_pos_x + Pig::collision_offset_x,
+                this->old_pos_y + Pig::collision_offset_y,
+                Pig::collision_size_x,
+                Pig::collision_size_y
+            },
+            Vector2D{Pig::collision_offset_x, Pig::collision_offset_y}
+        };
+    }
+    
+    void handle_collision(CollisionType const& type, CollisionSide const& side) override {}
     
     void update(double elapsedTime) override
     {
@@ -553,6 +645,11 @@ public:
     static auto constexpr IDLE_ANIMATION = 0;
     static auto constexpr ATTACKING_ANIMATION = 1;
 
+    static auto constexpr collision_offset_x = 20.;
+    static auto constexpr collision_offset_y = 20.;
+    static auto constexpr collision_size_x = 20.;
+    static auto constexpr collision_size_y = 18.;
+    
     Cannon(SDL_Renderer* renderer, double pos_x, double pos_y, int face)
         : face(face)
         , pos_x(pos_x)
@@ -587,6 +684,42 @@ public:
     void update(double elapsedTime) override
     {
     }
+
+    void set_position(double x, double y) override {}
+
+    Vector2D get_position() const override
+    {
+        return Vector2D{this->pos_x, this->pos_y};
+    }
+
+    Vector2D get_velocity() const override
+    {
+        return Vector2D{0.0, 0.0};
+    }
+
+    void set_velocity(double x, double y) override {}
+
+    CollisionRegionInformation get_collision_region_information() const override
+    {
+        return CollisionRegionInformation{
+            Region2D{
+                this->pos_x + Cannon::collision_offset_x,
+                this->pos_y + Cannon::collision_offset_y,
+                Cannon::collision_size_x,
+                Cannon::collision_size_y
+            },
+            // Cannons are not movable
+            Region2D{
+                this->pos_x + Cannon::collision_offset_x,
+                this->pos_y + Cannon::collision_offset_y,
+                Cannon::collision_size_x,
+                Cannon::collision_size_y
+            },
+            Vector2D{Cannon::collision_offset_x, Cannon::collision_offset_y}
+        };
+    }
+
+    void handle_collision(CollisionType const& type, CollisionSide const& side) override {}
     
     void trigger_attack()
     {
@@ -631,6 +764,17 @@ public:
     static auto constexpr DYING_ANIMATION = 7;
     static auto constexpr DEAD_ANIMATION = 8;
 
+    static auto constexpr collision_offset_x = 38.;
+    static auto constexpr collision_offset_y = 36.;
+    static auto constexpr collision_size_x = 20.;
+    static auto constexpr collision_size_y = 27.;
+
+    static auto constexpr attack_region_offset_x = 30.;
+    static auto constexpr attack_region_offset_y = -10.;
+    static auto constexpr attack_region_w = 10.;
+    static auto constexpr attack_region_h = 20.;
+
+public:
     King(SDL_Renderer* renderer, double pos_x, double pos_y)
         : running_side(0)
         , animations()
@@ -773,6 +917,83 @@ public:
         });
     }
     
+    void set_position(double x, double y) override
+    {
+        this->pos_x = x;
+        this->pos_y = y;
+    }
+
+    Vector2D get_position() const override
+    {
+        return Vector2D{this->pos_x, this->pos_y};
+    }
+
+    Vector2D get_velocity() const override
+    {
+        return Vector2D{this->velocity_x, this->velocity_y};
+    }
+
+    void set_velocity(double x, double y) override
+    {
+        this->velocity_x = x;
+        this->velocity_y = y;
+    }
+
+    CollisionRegionInformation get_collision_region_information() const override
+    {
+        return CollisionRegionInformation{
+            Region2D{
+                this->pos_x + King::collision_offset_x,
+                this->pos_y + King::collision_offset_y,
+                King::collision_size_x,
+                King::collision_size_y
+            },
+            Region2D{
+                this->old_pos_x + King::collision_offset_x,
+                this->old_pos_y + King::collision_offset_y,
+                King::collision_size_x,
+                King::collision_size_y
+            },
+            Vector2D{King::collision_offset_x, King::collision_offset_y}
+        };
+    }
+
+    void handle_collision(CollisionType const& type, CollisionSide const& side) override {
+        if (type == CollisionType::TILEMAP_COLLISION) {
+            if (side == CollisionSide::TOP_COLLISION) {
+                this->set_velocity(0.0, -0.01); // Force response
+            } else if (side == CollisionSide::BOTTOM_COLLISION) {
+                this->is_grounded = true;
+            }
+        }
+    }
+
+    void handle_controller(const unsigned char* keystates)
+    {
+        // Player handling
+        if (!this->is_taking_damage && !this->is_dying && !this->is_dead) {
+            if (keystates[SDL_SCANCODE_LEFT]) {
+                this->running_side = -1;
+                this->face = -1;
+            } else if (keystates[SDL_SCANCODE_RIGHT]) {
+                this->running_side = +1;
+                this->face = +1;
+            } else {
+                this->running_side = 0;
+            }
+            if (keystates[SDL_SCANCODE_UP]) {
+                if (!this->is_jumping && !this->is_falling) {
+                    this->start_jumping = true;
+                }
+            }
+            if (keystates[SDL_SCANCODE_LCTRL]) {
+                if (!this->is_attacking) {
+                    this->is_attacking = true;
+                }
+            }
+        }
+    }
+    
     void register_on_dead_callback(std::function<void()> const& f)
     {
         this->on_dead_callback = f;
@@ -847,25 +1068,15 @@ public:
         this->animations.at(current_animation).run(this->renderer, elapsedTime, this->face, int(this->pos_x), int(this->pos_y));
     }
 
-    Region2D collision_region() const {
-        auto constexpr player_collision_offset_x = 38.;
-        auto constexpr player_collision_offset_y = 36.;
- 
-        return Region2D{
-            this->pos_x + player_collision_offset_x,
-            this->pos_y + player_collision_offset_y,
-            20.0,
-            27.0
-        };
-    }
-    
     Region2D attack_region() const {
-        auto collision_region = this->collision_region();
+        auto collision_region_info = this->get_collision_region_information();
+        auto const& collision_region = collision_region_info.collision_region;
+
         return Region2D{
-            collision_region.x + this->face * 30.,
-            collision_region.y - 10.,
-            collision_region.w + 10.,
-            collision_region.h + 20.
+            collision_region.x + this->face * attack_region_offset_x,
+            collision_region.y + attack_region_offset_y,
+            collision_region.w + attack_region_w,
+            collision_region.h + attack_region_h
         };
     }
 
@@ -987,7 +1198,6 @@ int main(int argc, char* args[])
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
     bool show_debug = false;
-    std::vector<std::string> debug_messages;
     
     auto load_spritesheet = [&renderer](std::string const& filename) {
         return load_media("assets/sprites/" + filename, renderer);
@@ -1001,7 +1211,6 @@ int main(int argc, char* args[])
     auto game_characters = std::vector<IGameCharacter*>();
     auto player = King(renderer, 120.0, 320.0);
     game_characters.push_back(&player);
-
     int n_pigs = 10;
     for (int i = 0; i < n_pigs; ++i) {
         auto pos_x = 300 + 5 * i;
@@ -1062,95 +1271,29 @@ int main(int argc, char* args[])
         }
                         
         auto keystates = SDL_GetKeyboardState(NULL);
-        // Player handling
-        if (!player.is_taking_damage && !player.is_dying && !player.is_dead) {
-            if (keystates[SDL_SCANCODE_LEFT]) {
-                player.running_side = -1;
-                player.face = -1;
-            } else if (keystates[SDL_SCANCODE_RIGHT]) {
-                player.running_side = +1;
-                player.face = +1;
-            } else {
-                player.running_side = 0;
-            }
-            if (keystates[SDL_SCANCODE_UP]) {
-                if (!player.is_jumping && !player.is_falling) {
-                    player.start_jumping = true;
-                }
-            }
-            if (keystates[SDL_SCANCODE_LCTRL]) {
-                if (!player.is_attacking) {
-                    player.is_attacking = true;
-                }
-            }
-        }
-
+        player.handle_controller(keystates);
         for (auto* c : game_characters) {
             c->update(elapsedTime);
         }
 
-        // Player collision
-        double player_collision_offset_x = 38.0;
-        double player_collision_offset_y = 36.0;
-        double o_player_collision_x = player.old_pos_x + player_collision_offset_x;
-        double o_player_collision_y = player.old_pos_y + player_collision_offset_y;
-        double player_collision_x = player.pos_x + player_collision_offset_x;
-        double player_collision_y = player.pos_y + player_collision_offset_y;
-        double player_collision_w = 20.0;
-        double player_collision_h = 27.0;
-
-        // Pig collision
-        double pig_collision_offset_x = 30.0;
-        double pig_collision_offset_y = 30.0;
-        double pig_collision_w = 18.0;
-        double pig_collision_h = 18.0;
-
-        compute_collisions(
-            tilemap,
-            player_collision_x, player_collision_y,
-            player_collision_w, player_collision_h,
-            o_player_collision_x, o_player_collision_y,
-            player_collision_offset_x, player_collision_offset_y,
-            // Out:
-            player.pos_x, player.pos_y, player.velocity_x, player.velocity_y,
-            player.is_grounded
-        );
         for (auto* c : game_characters) {
-            auto* pig_ptr = dynamic_cast<Pig*>(c);
-            if (!pig_ptr) continue;
-            auto& pig = *pig_ptr;
-
-            double pig_collision_x = pig.pos_x + pig_collision_offset_x;
-            double pig_collision_y = pig.pos_y + pig_collision_offset_y;
-            bool _1;
-            double o_pig_collision_x = pig.old_pos_x + pig_collision_offset_x;
-            double o_pig_collision_y = pig.old_pos_y + pig_collision_offset_y;
-
-            compute_collisions(
-                tilemap,
-                pig_collision_x, pig_collision_y,
-                pig_collision_w, pig_collision_h,
-                o_pig_collision_x, o_pig_collision_y,
-                pig_collision_offset_x, pig_collision_offset_y,
-                // Out:
-                pig.pos_x, pig.pos_y, pig.velocity_x, pig.velocity_y,
-                _1
-            );
+            compute_tilemap_collisions(tilemap, c);
         }
-        player_collision_x = player.pos_x + player_collision_offset_x;
-        player_collision_y = player.pos_y + player_collision_offset_y;
         player.is_falling = (!player.is_grounded && player.velocity_y > 0.0);
         player.is_jumping = (!player.is_grounded && player.velocity_y < 0.0);
         if (player.is_grounded && abs(player.pos_y - player.old_pos_y) > 0.1) { player.just_touched_ground = true; }
-        
+
         auto player_attack_region = player.attack_region();
         for (auto* c : game_characters) {
             auto* pig_ptr = dynamic_cast<Pig*>(c);
             if (!pig_ptr) continue;
             auto& pig = *pig_ptr;
+            
+            auto pig_collision_region_info = pig.get_collision_region_information();
+            auto pig_collision_region = pig_collision_region_info.collision_region;
 
-            double pig_collision_x = pig.pos_x + pig_collision_offset_x;
-            double pig_collision_y = pig.pos_y + pig_collision_offset_y;
+            auto player_collision_region_info = player.get_collision_region_information();
+            auto player_collision_region = player_collision_region_info.collision_region;
 
             if (
                 player.is_attacking &&
@@ -1159,10 +1302,7 @@ int main(int argc, char* args[])
                 !pig.is_dying &&
                 !pig.is_dead
             ) {
-                if (check_aabb_collision(
-                    player_attack_region.x, player_attack_region.y, player_attack_region.w, player_attack_region.h,
-                    pig_collision_x, pig_collision_y, pig_collision_w, pig_collision_h)
-                ) {
+                if (check_aabb_collision(player_attack_region, pig_collision_region)) {
                     pig.start_taking_damage();
                     window_is_shaking = true;
                     window_shaker.restart();
@@ -1178,10 +1318,7 @@ int main(int argc, char* args[])
                 !pig.is_dying &&
                 !pig.is_dead
             ) {
-                if (check_aabb_collision(
-                    player_collision_x, player_collision_y, player_collision_w, player_collision_h,
-                    pig_collision_x, pig_collision_y, pig_collision_w, pig_collision_h)
-                ) {
+                if (check_aabb_collision(player_collision_region, pig_collision_region)) {
                     player.start_taking_damage();
                     window_is_shaking = true;
                     window_shaker.restart();
@@ -1192,15 +1329,10 @@ int main(int argc, char* args[])
             player.is_attacking &&
             !player.is_taking_damage
         ) {
-            auto constexpr cannon_collision_offset_x = 20.;
-            auto constexpr cannon_collision_offset_y = 20.;
-            double cannon_collision_x = cannon.pos_x + cannon_collision_offset_x;
-            double cannon_collision_y = cannon.pos_y + cannon_collision_offset_y;
-
-            if (check_aabb_collision(
-                player_attack_region.x, player_attack_region.y, player_attack_region.w, player_attack_region.h,
-                cannon_collision_x, cannon_collision_y, pig_collision_w, pig_collision_h)
-            ) {
+            auto cannon_collision_region_info = cannon.get_collision_region_information();
+            auto cannon_collision_region = cannon_collision_region_info.collision_region;
+            
+            if (check_aabb_collision(player_attack_region, cannon_collision_region)) {
                 cannon.trigger_attack();
             }
         }
@@ -1281,34 +1413,26 @@ int main(int argc, char* args[])
         }
         transition_animation.run(renderer, elapsedTime);
 
+        debug_messages.push_back("Position: " + std::to_string(player.pos_x) + ", " + std::to_string(player.pos_y) + ")");
         if (show_debug) {
+            auto r = (Uint8)(0);
+            auto g = (Uint8)(0);
+            auto b = (Uint8)(0);
+            auto a = (Uint8)(0);
+            SDL_GetRenderDrawColor(renderer, &r, &g, &b, &a);
             SDL_SetRenderDrawColor(renderer, 255, 0, 0, 90);
 
-            auto player_collision_rect = SDL_Rect{int(player_collision_x), int(player_collision_y), int(player_collision_w), int(player_collision_h)};
-            SDL_RenderFillRect(renderer, &player_collision_rect);
-
             for (auto* c : game_characters) {
-                auto* pig_ptr = dynamic_cast<Pig*>(c);
-                if (!pig_ptr) continue;
-                auto& pig = *pig_ptr;
-
-                double pig_collision_x = pig.pos_x + pig_collision_offset_x;
-                double pig_collision_y = pig.pos_y + pig_collision_offset_y;
-                auto pig_collision_rect = SDL_Rect{
-                    int(pig_collision_x),
-                    int(pig_collision_y),
-                    int(pig_collision_w),
-                    int(pig_collision_h),
-                };
-                SDL_RenderFillRect(renderer, &pig_collision_rect);
+                auto collision_region_info = c->get_collision_region_information();
+                auto collision_rect = to_sdl_rect(collision_region_info.collision_region);
+                SDL_RenderFillRect(renderer, &collision_rect);
             }
-            
-            auto attack_region = player.attack_region();
-            auto player_weapon_rect = SDL_Rect{int(attack_region.x), int(attack_region.y), int(attack_region.w), int(attack_region.h)};
-            SDL_RenderFillRect(renderer, &player_weapon_rect);
+            auto player_attack_region = player.attack_region();
+            auto player_attack_rect = to_sdl_rect(player_attack_region);
+            SDL_RenderFillRect(renderer, &player_attack_rect);
 
             debug_text(debug_messages, renderer, default_font, 10, 10);
-            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+            SDL_SetRenderDrawColor(renderer, r, g, b, a);
         }        
         
         SDL_RenderPresent(renderer);
