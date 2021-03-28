@@ -10,6 +10,7 @@
 #include <memory>
 #include <random>
 #include <map>
+#include <variant>
 
 auto constexpr WIDTH = 25;
 auto constexpr HEIGHT = 18;
@@ -66,6 +67,7 @@ public:
     virtual void set_velocity(double x, double y) = 0;
     virtual void handle_collision(CollisionType const& type, CollisionSide const& side) = 0;
     virtual CollisionRegionInformation get_collision_region_information() const = 0;
+    virtual void on_after_collision() = 0;
 };
 
 SDL_Rect to_sdl_rect(Region2D const& region)
@@ -194,15 +196,10 @@ void compute_tilemap_collisions(Tilemap const& tilemap, IGameCharacter* c)
                     auto tile_region = Region2D{double(tile_size * j), double(tile_size * i), double(tile_size), double(tile_size)};
 
                     if (check_aabb_collision(collision_region, tile_region)) {
-                        
-                        debug_messages.push_back("Colliding! on (" + std::to_string(j) + ", " + std::to_string(i) + "): " + std::to_string(tile_region.x) + ", " + std::to_string(tile_region.y));
-                        
                         if (
                             collision_region.x + collision_region.w > tile_region.x &&
                             old_collision_region.x + old_collision_region.w <= tile_region.x
                         ) {
-                            debug_messages.push_back("RIGHT collision found");
-
                             c->set_position(tile_region.x - collision_region_offset.x - collision_region.w - 0.1, current_position.y);
                             c->set_velocity(0.0, current_velocity.y);
 
@@ -211,8 +208,6 @@ void compute_tilemap_collisions(Tilemap const& tilemap, IGameCharacter* c)
                             collision_region.x < tile_region.x + tile_region.w &&
                             old_collision_region.x >= tile_region.x + tile_region.w
                         ) {
-                            debug_messages.push_back("LEFT collision found");
-
                             c->set_position(tile_region.x + tile_region.w - collision_region_offset.x + 0.1, current_position.y);
                             c->set_velocity(0.0, current_velocity.y);
 
@@ -239,8 +234,9 @@ void compute_tilemap_collisions(Tilemap const& tilemap, IGameCharacter* c)
             }
         }
     }
+    
+    c->on_after_collision();
 }
-
 
 SDL_Texture* load_media(std::string const& filename, SDL_Renderer* renderer)
 {
@@ -493,6 +489,7 @@ public:
     }
     
     void handle_collision(CollisionType const& type, CollisionSide const& side) override {}
+    void on_after_collision() override {}
     
     void update(double elapsedTime) override
     {
@@ -520,6 +517,9 @@ public:
         this->velocity_x = 0.05;
         this->velocity_y = -0.1;
         this->is_taking_damage = true;
+        if (this->on_start_taking_damage) {
+            (*this->on_start_taking_damage)();
+        }
     }
     
     void run_animation(double elapsedTime) override
@@ -595,6 +595,7 @@ public:
     int life;
     bool is_dying;
     bool is_dead;
+    std::optional<std::function<void()>> on_start_taking_damage;
 };
 
 class StateTimeout {
@@ -645,10 +646,10 @@ public:
     static auto constexpr IDLE_ANIMATION = 0;
     static auto constexpr ATTACKING_ANIMATION = 1;
 
-    static auto constexpr collision_offset_x = 20.;
-    static auto constexpr collision_offset_y = 20.;
-    static auto constexpr collision_size_x = 20.;
-    static auto constexpr collision_size_y = 18.;
+    static auto constexpr collision_offset_x = 35.;
+    static auto constexpr collision_offset_y = 43.;
+    static auto constexpr collision_size_x = 24.;
+    static auto constexpr collision_size_y = 21.;
     
     Cannon(SDL_Renderer* renderer, double pos_x, double pos_y, int face)
         : face(face)
@@ -679,6 +680,11 @@ public:
             },
             100.
         );
+    }
+    
+    void set_on_before_fire(std::function<void()> const& f)
+    {
+        this->on_before_fire = f;
     }
 
     void update(double elapsedTime) override
@@ -721,10 +727,15 @@ public:
 
     void handle_collision(CollisionType const& type, CollisionSide const& side) override {}
     
+    void on_after_collision() override {}
+    
     void trigger_attack()
     {
         if (!this->is_attacking) {
             this->is_attacking = true;
+            if (this->on_before_fire) {
+                (*this->on_before_fire)();
+            }
             this->animations.at(ATTACKING_ANIMATION).set_on_finish_animation_callback([this]() {
                 this->is_attacking = false;
             });
@@ -750,6 +761,181 @@ public:
     bool is_attacking;
     SDL_Renderer* renderer;
     SDL_Texture* spritesheet;
+    std::optional<std::function<void()>> on_before_fire;
+};
+
+class CannonBall : public IGameCharacter {
+public:
+    enum class CannonBallState {
+        active = 0,
+        exploding = 1,
+        finished = 2
+    };
+    
+    static auto constexpr IDLE_ANIMATION = 0;
+
+    static auto constexpr collision_offset_x = 23.;
+    static auto constexpr collision_offset_y = 13.;
+    static auto constexpr collision_size_x = 12.;
+    static auto constexpr collision_size_y = 12.;
+
+    static auto constexpr exploding_collision_offset_x = 10.;
+    static auto constexpr exploding_collision_offset_y = -10.;
+    static auto constexpr exploding_collision_size_x = 40.;
+    static auto constexpr exploding_collision_size_y = 40.;
+    
+    static auto constexpr ball_exit_offset_x = 23.0;
+    static auto constexpr ball_exit_offset_y = 33.0;    
+
+    CannonBall(SDL_Renderer* renderer, double pos_x, double pos_y)
+        : animations()
+        , boom_animation(nullptr, {}, 0, 0, 100.)
+        , old_pos_x(pos_x)
+        , old_pos_y(pos_y)
+        , pos_x(pos_x)
+        , pos_y(pos_y)
+        , velocity_x(0.0)
+        , velocity_y(0.0)
+        , state(CannonBallState::active)
+        , renderer(renderer)
+        , spritesheet(load_media("assets/sprites/cannonball44x28.png", renderer))
+        , boom_spritesheet(load_media("assets/sprites/boom80x80.png", renderer))
+    {
+        auto register_animation = [&](int id, std::vector<std::tuple<int, int>> const& frames, double time) {
+            this->animations.insert(std::make_pair(id, Animation(this->spritesheet, frames, 44, 28, time)));
+        };
+        register_animation(
+            CannonBall::IDLE_ANIMATION,
+            {
+                {0, 0},
+            },
+            1000.
+        );
+        
+        this->boom_animation = Animation(
+            this->boom_spritesheet,
+            {
+                {0, 0},
+                {1, 0},
+                {2, 0},
+                {3, 0},
+                {4, 0},
+                {5, 0},
+            },
+            80,
+            80,
+            100.
+        );
+        
+        this->boom_animation.set_on_finish_animation_callback([this](){
+            this->state = CannonBallState::finished;
+        });
+    }
+
+    void update(double elapsedTime) override
+    {
+        this->old_pos_x = this->pos_x;
+        this->old_pos_y = this->pos_y;
+        this->pos_x = this->pos_x + this->velocity_x * elapsedTime;
+        this->pos_y = this->pos_y + this->velocity_y * elapsedTime;        
+    }
+    
+    void run_animation(double elapsedTime) override {
+        if (this->state == CannonBallState::active) {
+            this->animations.at(IDLE_ANIMATION).run(this->renderer, elapsedTime, +1, int(this->pos_x), int(this->pos_y));
+        } else if (this->state == CannonBallState::exploding) {
+            this->boom_animation.run(this->renderer, elapsedTime, +1, int(this->pos_x - 8.0), int(this->pos_y - 28.0));
+        }
+    }
+
+    void set_position(double x, double y) override {}
+
+    Vector2D get_position() const override {
+        return Vector2D{this->pos_x, this->pos_y};
+    }
+
+    Vector2D get_velocity() const override {
+        return Vector2D{this->velocity_x, this->velocity_y};
+    }
+
+    void set_velocity(double x, double y) override {
+        this->velocity_x = x;
+        this->velocity_y = y;
+    }
+    
+    void handle_collision(CollisionType const& type, CollisionSide const& side) override {
+        if (type == CollisionType::TILEMAP_COLLISION) {
+            this->state = CannonBallState::exploding;
+        }
+    }
+
+    CollisionRegionInformation get_collision_region_information() const override {
+        if (this->state == CannonBallState::active) {
+            return CollisionRegionInformation{
+                Region2D{
+                    this->pos_x + CannonBall::collision_offset_x,
+                    this->pos_y + CannonBall::collision_offset_y,
+                    CannonBall::collision_size_x,
+                    CannonBall::collision_size_y
+                },
+                Region2D{
+                    this->old_pos_x + CannonBall::collision_offset_x,
+                    this->old_pos_y + CannonBall::collision_offset_y,
+                    CannonBall::collision_size_x,
+                    CannonBall::collision_size_y
+                },
+                Vector2D{CannonBall::collision_offset_x, CannonBall::collision_offset_y}
+            };
+        } else if (this->state == CannonBallState::exploding) {
+            return CollisionRegionInformation{
+                Region2D{
+                    this->pos_x + CannonBall::exploding_collision_offset_x,
+                    this->pos_y + CannonBall::exploding_collision_offset_y,
+                    CannonBall::exploding_collision_size_x,
+                    CannonBall::exploding_collision_size_y
+                },
+                Region2D{
+                    this->old_pos_x + CannonBall::exploding_collision_offset_x,
+                    this->old_pos_y + CannonBall::exploding_collision_offset_y,
+                    CannonBall::exploding_collision_size_x,
+                    CannonBall::exploding_collision_size_y
+                },
+                Vector2D{CannonBall::exploding_collision_offset_x, CannonBall::exploding_collision_offset_y}
+            };
+        } else {
+            return CollisionRegionInformation{
+                Region2D{
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                },
+                Region2D{
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                },
+                Vector2D{0.0, 0.0}
+            };
+        }
+    }
+
+    void on_after_collision() override {}
+
+public:
+    std::map<int, Animation> animations;
+    Animation boom_animation;
+    double old_pos_x;
+    double old_pos_y;
+    double pos_x;
+    double pos_y;
+    double velocity_x;
+    double velocity_y;
+    CannonBallState state;
+    SDL_Renderer* renderer;
+    SDL_Texture* spritesheet;
+    SDL_Texture* boom_spritesheet;
 };
 
 class King : public IGameCharacter {
@@ -967,6 +1153,15 @@ public:
             }
         }
     }
+    
+    void on_after_collision() override
+    {
+        this->is_falling = (!this->is_grounded && this->velocity_y > 0.0);
+        this->is_jumping = (!this->is_grounded && this->velocity_y < 0.0);
+        if (this->is_grounded && abs(this->pos_y - this->old_pos_y) > 0.1) {
+            this->just_touched_ground = true;
+        }
+    }
 
     void handle_controller(const unsigned char* keystates)
     {
@@ -1034,6 +1229,9 @@ public:
         this->velocity_y = -0.1;
         this->is_taking_damage = true;
         this->life -= 1;
+        if (this->on_start_taking_damage) {
+            (*this->on_start_taking_damage)();
+        }
     }
 
     void run_animation(double elapsedTime) override
@@ -1104,6 +1302,7 @@ public:
     bool is_dying;
     bool is_dead;
     std::optional<std::function<void()>> on_dead_callback;
+    std::optional<std::function<void()>> on_start_taking_damage;
 };
 
 void debug_text(std::vector<std::string> const& messages, SDL_Renderer* renderer, TTF_Font* font, int posx, int posy)
@@ -1124,6 +1323,127 @@ void debug_text(std::vector<std::string> const& messages, SDL_Renderer* renderer
     }
 }
 
+void pig_king_collision(Pig* pig_ptr, King* king)
+{
+    auto& player = *king;
+    auto& pig = *pig_ptr;
+    
+    auto pig_collision_region_info = pig.get_collision_region_information();
+    auto pig_collision_region = pig_collision_region_info.collision_region;
+
+    auto player_collision_region_info = player.get_collision_region_information();
+    auto player_collision_region = player_collision_region_info.collision_region;
+
+    if (
+        player.is_attacking &&
+        !player.is_taking_damage &&
+        !pig.is_taking_damage &&
+        !pig.is_dying &&
+        !pig.is_dead
+    ) {
+        auto player_attack_region = player.attack_region();
+
+        if (check_aabb_collision(player_attack_region, pig_collision_region)) {
+            pig.start_taking_damage();
+        }
+    }
+
+    if (
+        !player.is_taking_damage &&
+        !player.after_taking_damage &&
+        !player.is_dying &&
+        !player.is_dead &&
+        !pig.is_taking_damage &&
+        !pig.is_dying &&
+        !pig.is_dead
+    ) {
+        if (check_aabb_collision(player_collision_region, pig_collision_region)) {
+            player.start_taking_damage();
+        }
+    }
+}
+
+void cannon_king_collision(Cannon* cannon_ptr, King* king)
+{
+    auto& player = *king;
+    auto& cannon = *cannon_ptr;
+
+    if (
+        player.is_attacking &&
+        !player.is_taking_damage
+    ) {
+        auto cannon_collision_region_info = cannon.get_collision_region_information();
+        auto cannon_collision_region = cannon_collision_region_info.collision_region;
+        auto player_attack_region = player.attack_region();
+        
+        if (check_aabb_collision(player_attack_region, cannon_collision_region)) {
+            cannon.trigger_attack();
+        }
+    }
+}
+
+void cannonball_king_collision(CannonBall* cannon_ptr, King* king)
+{
+    auto& player = *king;
+    auto& cannonball = *cannon_ptr;
+    if (
+        !player.is_taking_damage &&
+        !player.after_taking_damage &&
+        !player.is_dying &&
+        !player.is_dead
+    ) {
+        auto cannonball_collision_region_info = cannonball.get_collision_region_information();
+        auto cannonball_collision_region = cannonball_collision_region_info.collision_region;
+
+        auto player_collision_region_info = player.get_collision_region_information();
+        auto player_collision_region = player_collision_region_info.collision_region;
+
+        if (check_aabb_collision(cannonball_collision_region, player_collision_region)) {
+            player.start_taking_damage();
+        }
+    }
+}
+
+void cannonball_pig_collision(CannonBall* cannon_ptr, Pig* pig_ptr)
+{
+    auto& pig = *pig_ptr;
+    auto& cannonball = *cannon_ptr;
+
+    if (
+        !pig.is_taking_damage &&
+        !pig.is_dying &&
+        !pig.is_dead
+    ) {
+        auto const& cannonball_collision_region = cannonball.get_collision_region_information().collision_region;
+        auto const& pig_collision_region = pig.get_collision_region_information().collision_region;
+
+        if (check_aabb_collision(cannonball_collision_region, pig_collision_region)) {
+            pig.start_taking_damage();
+        }
+    }
+}
+
+void compute_characters_collisions(std::vector<IGameCharacter*>& game_characters)
+{
+    for (int i = 0; i < game_characters.size(); ++i) {
+        for (int j = i + 1; j < game_characters.size(); ++j) {
+            if (false) {}
+
+            else if (dynamic_cast<Pig*>(game_characters[i]) && dynamic_cast<King*>(game_characters[j])) { pig_king_collision(dynamic_cast<Pig*>(game_characters[i]), dynamic_cast<King*>(game_characters[j])); }
+            else if (dynamic_cast<Pig*>(game_characters[j]) && dynamic_cast<King*>(game_characters[i])) { pig_king_collision(dynamic_cast<Pig*>(game_characters[j]), dynamic_cast<King*>(game_characters[i])); }
+
+            else if (dynamic_cast<Cannon*>(game_characters[i]) && dynamic_cast<King*>(game_characters[j])) { cannon_king_collision(dynamic_cast<Cannon*>(game_characters[i]), dynamic_cast<King*>(game_characters[j])); }
+            else if (dynamic_cast<Cannon*>(game_characters[j]) && dynamic_cast<King*>(game_characters[i])) { cannon_king_collision(dynamic_cast<Cannon*>(game_characters[j]), dynamic_cast<King*>(game_characters[i])); }
+
+            else if (dynamic_cast<CannonBall*>(game_characters[i]) && dynamic_cast<King*>(game_characters[j])) { cannonball_king_collision(dynamic_cast<CannonBall*>(game_characters[i]), dynamic_cast<King*>(game_characters[j])); }
+            else if (dynamic_cast<CannonBall*>(game_characters[j]) && dynamic_cast<King*>(game_characters[i])) { cannonball_king_collision(dynamic_cast<CannonBall*>(game_characters[j]), dynamic_cast<King*>(game_characters[i])); }
+
+            else if (dynamic_cast<CannonBall*>(game_characters[i]) && dynamic_cast<Pig*>(game_characters[j])) { cannonball_pig_collision(dynamic_cast<CannonBall*>(game_characters[i]), dynamic_cast<Pig*>(game_characters[j])); }
+            else if (dynamic_cast<CannonBall*>(game_characters[j]) && dynamic_cast<Pig*>(game_characters[i])) { cannonball_pig_collision(dynamic_cast<CannonBall*>(game_characters[j]), dynamic_cast<Pig*>(game_characters[i])); }
+        }
+    }
+}
+
 int main(int argc, char* args[])
 {
     SDL_Window* window = nullptr;
@@ -1135,12 +1455,12 @@ int main(int argc, char* args[])
         {13, 19, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 18, 25, 25, 25, 25, 25,  5, 13},
         {13, 14, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 15, 13, 13, 13, 13, 13, 12, 13},
         {13, 14, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 15, 13, 13, 13, 13, 13, 12, 13},
-        {13, 14, 39, 39, 39, 39, 39, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 15, 39, 39, 39, 13, 13, 12, 13},
+        {13, 14, 61, 39, 39, 39, 39, 61, 61, 39, 39, 39, 39, 39, 39, 39, 39, 15, 39, 39, 39, 13, 13, 12, 13},
         {13, 14, 61, 61, 61, 61, 61, 39, 61, 61, 61, 61, 61, 61, 61, 61, 61, 15, 13, 13, 13, 13, 13, 12, 13},
         {13, 14, 61, 61, 61, 61, 61, 61, 39, 61, 61, 61, 61, 61, 61, 61, 61, 27, 13, 13, 13, 39, 39, 12, 13},
-        {13, 14, 61, 61, 61, 61, 61, 61, 61, 39, 61, 61, 61, 61, 61, 61, 61, 13, 13, 13, 13, 13, 13, 12, 13},
+        {13, 14, 61, 39, 61, 61, 61, 61, 61, 39, 61, 61, 61, 61, 61, 61, 61, 13, 13, 13, 13, 13, 13, 12, 13},
         {13, 14, 61, 61, 61, 61, 61, 61, 61, 61, 39, 61, 61, 61, 61, 61, 61, 13, 13, 13, 13, 13, 13, 12, 13},
-        {13, 14, 61, 61, 61, 61, 61, 61, 61, 61, 61, 39, 61, 61, 61, 61, 61,  3, 39, 39, 39, 13, 39, 12, 13},
+        {13, 14, 39, 61, 61, 61, 61, 61, 61, 61, 61, 39, 61, 61, 61, 61, 61,  3, 39, 39, 39, 13, 39, 12, 13},
         {13, 14, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 15, 13, 13, 13, 13, 13, 12, 13},
         {13, 14, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 15, 13, 13, 13, 13, 13, 12, 13},
         {13, 19, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 38, 61, 61, 61, 39, 15, 13, 13, 13, 39, 13, 12, 13},
@@ -1208,6 +1528,9 @@ int main(int argc, char* args[])
     auto lifebar_heart = load_spritesheet("small_heart18x14.png");
     auto door = load_spritesheet("door46x56.png");
 
+    auto window_is_shaking = false;
+    auto window_shaker = StateTimeout(300., [&window_is_shaking](){ window_is_shaking = false; });
+
     auto game_characters = std::vector<IGameCharacter*>();
     auto player = King(renderer, 120.0, 320.0);
     game_characters.push_back(&player);
@@ -1217,22 +1540,47 @@ int main(int argc, char* args[])
         auto pos_y = 422;
         auto *pig = new Pig(renderer, pos_x, pos_y);
         game_characters.push_back(pig);
+
+        pig->on_start_taking_damage = [&window_is_shaking, &window_shaker]() {
+            window_is_shaking = true;
+            window_shaker.restart();
+        };
+    }
+    for (int i = 0; i < 2 * n_pigs; ++i) {
+        auto pos_x = 300 + 5 * i;
+        auto pos_y = 72;
+        auto *pig = new Pig(renderer, pos_x, pos_y);
+        game_characters.push_back(pig);
+
+        pig->on_start_taking_damage = [&window_is_shaking, &window_shaker]() {
+            window_is_shaking = true;
+            window_shaker.restart();
+        };
     }
     auto cannon = Cannon(renderer, 80.0, 64.0, -1);
     game_characters.push_back(&cannon);
+    cannon.set_on_before_fire([&game_characters, &renderer, &cannon]() {
+        auto cannon_position = cannon.get_position();
+        auto ball = new CannonBall(renderer, cannon_position.x + CannonBall::ball_exit_offset_x, cannon_position.y + CannonBall::ball_exit_offset_y);
+        ball->set_velocity(+0.4, 0.0);
+        game_characters.push_back(ball);
+    });
 
     auto last = (unsigned long long)(0);
     auto current = SDL_GetPerformanceCounter();
     auto fps_countdown = 1000.;
     auto fps_counter = 0;
     auto fps = 0;
-    auto window_is_shaking = false;
-    auto window_shaker = StateTimeout(300., [&window_is_shaking](){ window_is_shaking = false; });
     
     auto transition_animation = TransitionAnimation();
     player.register_on_dead_callback([&transition_animation]() {
         transition_animation.reset();
     });
+    player.on_start_taking_damage = [&window_is_shaking, &window_shaker]() {
+        window_is_shaking = true;
+        window_shaker.restart();
+    };
+    
     transition_animation.register_transition_callback([&player]() {
         player.pos_x = 120.0;
         player.pos_y = 320.0;
@@ -1279,63 +1627,8 @@ int main(int argc, char* args[])
         for (auto* c : game_characters) {
             compute_tilemap_collisions(tilemap, c);
         }
-        player.is_falling = (!player.is_grounded && player.velocity_y > 0.0);
-        player.is_jumping = (!player.is_grounded && player.velocity_y < 0.0);
-        if (player.is_grounded && abs(player.pos_y - player.old_pos_y) > 0.1) { player.just_touched_ground = true; }
+        compute_characters_collisions(game_characters);
 
-        auto player_attack_region = player.attack_region();
-        for (auto* c : game_characters) {
-            auto* pig_ptr = dynamic_cast<Pig*>(c);
-            if (!pig_ptr) continue;
-            auto& pig = *pig_ptr;
-            
-            auto pig_collision_region_info = pig.get_collision_region_information();
-            auto pig_collision_region = pig_collision_region_info.collision_region;
-
-            auto player_collision_region_info = player.get_collision_region_information();
-            auto player_collision_region = player_collision_region_info.collision_region;
-
-            if (
-                player.is_attacking &&
-                !player.is_taking_damage &&
-                !pig.is_taking_damage &&
-                !pig.is_dying &&
-                !pig.is_dead
-            ) {
-                if (check_aabb_collision(player_attack_region, pig_collision_region)) {
-                    pig.start_taking_damage();
-                    window_is_shaking = true;
-                    window_shaker.restart();
-                }
-            }
-
-            if (
-                !player.is_taking_damage &&
-                !player.after_taking_damage &&
-                !player.is_dying &&
-                !player.is_dead &&
-                !pig.is_taking_damage &&
-                !pig.is_dying &&
-                !pig.is_dead
-            ) {
-                if (check_aabb_collision(player_collision_region, pig_collision_region)) {
-                    player.start_taking_damage();
-                    window_is_shaking = true;
-                    window_shaker.restart();
-                }
-            }
-        }
-        if (
-            player.is_attacking &&
-            !player.is_taking_damage
-        ) {
-            auto cannon_collision_region_info = cannon.get_collision_region_information();
-            auto cannon_collision_region = cannon_collision_region_info.collision_region;
-            
-            if (check_aabb_collision(player_attack_region, cannon_collision_region)) {
-                cannon.trigger_attack();
-            }
-        }
         game_characters.erase(
             std::remove_if(game_characters.begin(), game_characters.end(), [](IGameCharacter* c) {
                 auto* pig = dynamic_cast<Pig*>(c);
