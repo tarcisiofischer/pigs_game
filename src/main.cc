@@ -938,6 +938,172 @@ public:
     SDL_Texture* boom_spritesheet;
 };
 
+class PigWithMatches : public IGameCharacter {
+public:
+    static auto constexpr IDLE_ANIMATION = 0;
+    static auto constexpr ACTIVATE_CANNON = 1;
+    static auto constexpr PREPARE_NEXT_MATCH = 2;
+    static auto constexpr MATCH_ON_HAND = 3;
+
+    static auto constexpr DEFAULT_THINK_TIMEOUT = 5000.0;
+
+    static auto constexpr collision_offset_x = 30.0;
+    static auto constexpr collision_offset_y = 30.0;
+    static auto constexpr collision_size_x = 18.0;
+    static auto constexpr collision_size_y = 18.0;
+
+    PigWithMatches(SDL_Renderer* renderer, double pos_x, double pos_y, int face, Cannon& cannon)
+        : face(face)
+        , pos_x(pos_x)
+        , pos_y(pos_y)
+        , velocity_x(0.0)
+        , velocity_y(0.0)
+        , renderer(renderer)
+        , spritesheet(load_media("assets/sprites/pig_with_match96x96.png", renderer))
+        , old_pos_x(pos_x)
+        , old_pos_y(pos_y)
+        , think_timeout(PigWithMatches::DEFAULT_THINK_TIMEOUT)
+        , start_attack(false)
+        , preparing_next_match(false)
+        , cannon(cannon)
+    {
+        auto register_animation = [&](int id, std::vector<std::tuple<int, int>> const& frames, double time) {
+            this->animations.insert(std::make_pair(id, Animation(this->spritesheet, frames, 96, 96, time)));
+        };
+        
+        register_animation(
+            PigWithMatches::IDLE_ANIMATION,
+            {
+                {0, 3},
+                {1, 3},
+                {2, 3},
+                {1, 3},
+            },
+            200.
+        );
+        register_animation(
+            PigWithMatches::ACTIVATE_CANNON, 
+            {
+                {0, 0},
+                {1, 0},
+                {2, 0},
+                {0, 1},
+                {1, 1},
+                {2, 1},
+                {0, 2},
+                {1, 2},
+                {1, 2},
+                {1, 2},
+                {1, 2},
+                {2, 2},
+            },
+            100.
+        );
+        this->animations.at(PigWithMatches::ACTIVATE_CANNON).set_on_finish_animation_callback([this]() {
+            this->start_attack = false;
+            this->cannon.trigger_attack();
+        });
+    }
+
+    void set_position(double x, double y) override
+    {
+        this->pos_x = x;
+        this->pos_y = y;
+    }
+
+    Vector2D get_position() const override
+    {
+        return Vector2D{this->pos_x, this->pos_y};
+    }
+    
+    Vector2D get_velocity() const override
+    {
+        return Vector2D{this->velocity_x, this->velocity_y};
+    }
+    
+    void set_velocity(double x, double y) override
+    {
+        this->velocity_x = x;
+        this->velocity_y = y;
+    }
+
+    CollisionRegionInformation get_collision_region_information() const override
+    {
+        return CollisionRegionInformation{
+            Region2D{
+                this->pos_x + this->collision_offset_x,
+                this->pos_y + this->collision_offset_y,
+                this->collision_size_x,
+                this->collision_size_y
+            },
+            Region2D{
+                this->old_pos_x + this->collision_offset_x,
+                this->old_pos_y + this->collision_offset_y,
+                this->collision_size_x,
+                this->collision_size_y
+            },
+            Vector2D{this->collision_offset_x, this->collision_offset_y}
+        };
+    }
+    
+    void handle_collision(CollisionType const& type, CollisionSide const& side) override {}
+    void on_after_collision() override {}
+    
+    void update(double elapsedTime) override
+    {
+        this->think(elapsedTime);
+
+        // Position setup
+        this->old_pos_x = this->pos_x;
+        this->old_pos_y = this->pos_y;
+        this->pos_x += this->velocity_x * elapsedTime;
+        this->pos_y += this->velocity_y * elapsedTime;        
+    }
+
+    void run_animation(double elapsedTime) override
+    {
+        auto current_animation = ([this]() {
+            if (this->start_attack) {
+                return ACTIVATE_CANNON;
+            }
+            if (this->preparing_next_match) {
+                return PREPARE_NEXT_MATCH;
+            }
+            return IDLE_ANIMATION;
+        })();
+        this->animations.at(current_animation).run(this->renderer, elapsedTime, -this->face, this->pos_x, this->pos_y);
+    }
+
+private:
+    void think(double elapsedTime)
+    {
+        if (!this->start_attack && !this->preparing_next_match) {
+            this->think_timeout -= elapsedTime;
+            if (this->think_timeout <= 0.) {
+                this->start_attack = true;
+                this->preparing_next_match = false;
+                this->think_timeout = PigWithMatches::DEFAULT_THINK_TIMEOUT;
+            }
+        }
+    }
+    
+public:
+    std::map<int, Animation> animations;
+    int face;
+    double pos_x;
+    double pos_y;
+    double velocity_x;
+    double velocity_y;
+    SDL_Renderer* renderer;
+    SDL_Texture* spritesheet;
+    double old_pos_x;
+    double old_pos_y;
+    double think_timeout;
+    bool start_attack;
+    bool preparing_next_match;
+    Cannon& cannon;
+};
+
 class King : public IGameCharacter {
 public:
     static auto constexpr IDLE_ANIMATION = 0;
@@ -1206,7 +1372,7 @@ public:
             if (this->start_jumping) {
                 this->start_jumping = false;
                 this->is_grounded = false;
-                this->velocity_y -= 0.5;
+                this->velocity_y -= 0.4;
             }
         }
         if (this->is_dead) {
@@ -1455,14 +1621,14 @@ int main(int argc, char* args[])
         {13, 19, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 18, 25, 25, 25, 25, 25,  5, 13},
         {13, 14, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 15, 13, 13, 13, 13, 13, 12, 13},
         {13, 14, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 15, 13, 13, 13, 13, 13, 12, 13},
-        {13, 14, 61, 39, 39, 39, 39, 61, 61, 39, 39, 39, 39, 39, 39, 39, 39, 15, 39, 39, 39, 13, 13, 12, 13},
-        {13, 14, 61, 61, 61, 61, 61, 39, 61, 61, 61, 61, 61, 61, 61, 61, 61, 15, 13, 13, 13, 13, 13, 12, 13},
-        {13, 14, 61, 61, 61, 61, 61, 61, 39, 61, 61, 61, 61, 61, 61, 61, 61, 27, 13, 13, 13, 39, 39, 12, 13},
-        {13, 14, 61, 39, 61, 61, 61, 61, 61, 39, 61, 61, 61, 61, 61, 61, 61, 13, 13, 13, 13, 13, 13, 12, 13},
+        {13, 14, 39, 39, 39, 61, 61, 61, 61, 61, 39, 39, 39, 39, 39, 39, 39, 15, 39, 39, 39, 13, 13, 12, 13},
+        {13, 14, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 15, 13, 13, 13, 13, 13, 12, 13},
+        {13, 14, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 27, 13, 13, 13, 39, 39, 12, 13},
+        {13, 14, 61, 61, 61, 61, 61, 61, 61, 39, 61, 61, 61, 61, 61, 61, 61, 13, 13, 13, 13, 13, 13, 12, 13},
         {13, 14, 61, 61, 61, 61, 61, 61, 61, 61, 39, 61, 61, 61, 61, 61, 61, 13, 13, 13, 13, 13, 13, 12, 13},
-        {13, 14, 39, 61, 61, 61, 61, 61, 61, 61, 61, 39, 61, 61, 61, 61, 61,  3, 39, 39, 39, 13, 39, 12, 13},
-        {13, 14, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 15, 13, 13, 13, 13, 13, 12, 13},
-        {13, 14, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 15, 13, 13, 13, 13, 13, 12, 13},
+        {13, 14, 61, 61, 61, 61, 61, 61, 61, 61, 61, 39, 61, 61, 61, 61, 61,  3, 39, 39, 39, 13, 39, 12, 13},
+        {13, 14, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 39, 61, 61, 61, 61, 15, 13, 13, 13, 13, 13, 12, 13},
+        {13, 14, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 39, 15, 13, 13, 13, 13, 13, 12, 13},
         {13, 19, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 38, 61, 61, 61, 39, 15, 13, 13, 13, 39, 13, 12, 13},
         {13, 14, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 39, 39, 15, 13, 13, 13, 13, 13, 12, 13},
         {13, 14, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 39, 39, 39, 15, 13, 39, 13, 13, 13, 12, 13},
@@ -1557,6 +1723,7 @@ int main(int argc, char* args[])
             window_shaker.restart();
         };
     }
+    
     auto cannon = Cannon(renderer, 80.0, 64.0, -1);
     game_characters.push_back(&cannon);
     cannon.set_on_before_fire([&game_characters, &renderer, &cannon]() {
@@ -1565,6 +1732,8 @@ int main(int argc, char* args[])
         ball->set_velocity(+0.4, 0.0);
         game_characters.push_back(ball);
     });
+    auto pig_with_match = PigWithMatches(renderer, 56., 64., +1, cannon);
+    game_characters.push_back(&pig_with_match);
 
     auto last = (unsigned long long)(0);
     auto current = SDL_GetPerformanceCounter();
