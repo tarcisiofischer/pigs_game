@@ -14,17 +14,123 @@
 
 auto constexpr WIDTH = 25;
 auto constexpr HEIGHT = 18;
-auto constexpr tile_size = 32;
-auto constexpr SCREEN_WIDTH = tile_size * WIDTH;
-auto constexpr SCREEN_HEIGHT = tile_size * HEIGHT;
+auto constexpr SCALE_SIZE = 2;
+auto constexpr TILE_SIZE = 32;
+auto constexpr SCREEN_WIDTH = 600 * SCALE_SIZE;
+auto constexpr SCREEN_HEIGHT = 300 * SCALE_SIZE;
 
-auto constexpr gravity = 0.001;
+auto constexpr gravity = -0.001;
 
 auto constexpr collision_tiles = std::array<int, 10>{1, 3, 12, 14, 15, 25, 27, 37, 38, 39};
 
 std::vector<std::string> debug_messages;
 
 using Tilemap = std::array<std::array<int, WIDTH>, HEIGHT>;
+
+template<typename T>
+struct Vector2D {
+    Vector2D<T> operator-(Vector2D<T> const& other) const
+    {
+        return Vector2D<T>{this->x - other.x, this->y - other.y};
+    }
+
+    Vector2D<T> operator+(Vector2D<T> const& other) const
+    {
+        return Vector2D<T>{this->x + other.x, this->y + other.y};
+    }
+
+    Vector2D<T>& operator+=(Vector2D<T> const& other)
+    {
+        this->x += other.x;
+        this->y += other.y;
+        return *this;
+    }
+
+    Vector2D<T>& operator-=(Vector2D<T> const& other)
+    {
+        this->x -= other.x;
+        this->y -= other.y;
+        return *this;
+    }
+
+    template <typename U>
+    Vector2D<T> operator*(U const& other) const
+    {
+        return Vector2D<T>{other * this->x, other * this->y};
+    }
+
+    Vector2D<int> as_int() const
+    {
+        return Vector2D<int>{int(this->x), int(this->y)};
+    }
+    
+    T x;
+    T y;
+};
+
+// TODO: Initialize the camera on main (avoid global)
+auto camera_offset = Vector2D<int>{0, 0};
+
+template<typename T>
+struct Region2D {
+    T x;
+    T y;
+    T w;
+    T h;
+};
+
+inline Vector2D<int> to_world_position(
+    Vector2D<int> const& camera_position,
+    Vector2D<int> const& size,
+    Vector2D<int> const& camera_offset
+)
+{
+    return {
+        camera_position.x / SCALE_SIZE + camera_offset.x,
+        ((camera_position.y - SCREEN_HEIGHT) / SCALE_SIZE) * -1 - size.y + camera_offset.y
+    };
+}
+
+inline Vector2D<int> to_camera_position(
+    Vector2D<int> const& world_position,
+    Vector2D<int> const& size,
+    Vector2D<int> const& camera_offset
+)
+{
+    return {
+        SCALE_SIZE * (world_position.x - camera_offset.x),
+        SCALE_SIZE * ((world_position.y + size.y - camera_offset.y) / -1) + SCREEN_HEIGHT
+    };
+}
+
+void draw_sprite(
+    SDL_Renderer* renderer,
+    SDL_Texture* spritesheet,
+    Vector2D<int> const& sprite_offset,
+    Vector2D<int> const& world_position,
+    Vector2D<int> const& size,
+    Vector2D<int> const& camera_offset,
+    SDL_RendererFlip const& flip=SDL_FLIP_NONE
+) {
+    auto srcrect = SDL_Rect{sprite_offset.x, sprite_offset.y, size.x, size.y};
+    auto camera_position = to_camera_position(world_position, size, camera_offset);
+    auto dstrect = SDL_Rect{camera_position.x, camera_position.y, SCALE_SIZE * size.x, SCALE_SIZE * size.y};
+    SDL_RenderCopyEx(renderer, spritesheet, &srcrect, &dstrect, 0.0, nullptr, flip);
+}
+
+void draw_static_sprite(
+    SDL_Renderer* renderer,
+    SDL_Texture* spritesheet,
+    Vector2D<int> const& sprite_offset,
+    Vector2D<int> const& static_camera_position,
+    Vector2D<int> const& size,
+    SDL_RendererFlip const& flip=SDL_FLIP_NONE
+) {
+    auto srcrect = SDL_Rect{sprite_offset.x, sprite_offset.y, size.x, size.y};
+    auto camera_position = to_camera_position(static_camera_position, size, {0, 0});
+    auto dstrect = SDL_Rect{camera_position.x, camera_position.y, SCALE_SIZE * size.x, SCALE_SIZE * size.y};
+    SDL_RenderCopyEx(renderer, spritesheet, &srcrect, &dstrect, 0.0, nullptr, flip);
+}
 
 enum class CollisionType {
     TILEMAP_COLLISION = 0
@@ -37,23 +143,29 @@ enum class CollisionSide {
     BOTTOM_COLLISION = 3
 };
 
-struct Vector2D {
-    double x;
-    double y;
-};
-
-struct Region2D {
-    double x;
-    double y;
-    double w;
-    double h;
-};
-
 struct CollisionRegionInformation
 {
-    Region2D collision_region;
-    Region2D old_collision_region;
-    Vector2D collision_region_offset;
+    CollisionRegionInformation(
+        Vector2D<double> position,
+        Vector2D<double> old_position,
+        Vector2D<int> collision_size
+    )
+        : collision_region{
+            position.x,
+            position.y,
+            double(collision_size.x),
+            double(collision_size.y)
+        }
+        , old_collision_region{
+            old_position.x,
+            old_position.y,
+            double(collision_size.x),
+            double(collision_size.y)
+        }
+        {}
+
+    const Region2D<double> collision_region;
+    const Region2D<double> old_collision_region;
 };
 
 class IGameCharacter
@@ -62,15 +174,16 @@ public:
     virtual void update(double elapsedTime) = 0;
     virtual void run_animation(double elapsedTime) = 0;
     virtual void set_position(double x, double y) = 0;
-    virtual Vector2D get_position() const = 0;
-    virtual Vector2D get_velocity() const = 0;
+    virtual Vector2D<double> get_position() const = 0;
+    virtual Vector2D<double> get_velocity() const = 0;
     virtual void set_velocity(double x, double y) = 0;
     virtual void handle_collision(CollisionType const& type, CollisionSide const& side) = 0;
     virtual CollisionRegionInformation get_collision_region_information() const = 0;
     virtual void on_after_collision() = 0;
 };
 
-SDL_Rect to_sdl_rect(Region2D const& region)
+template<typename T>
+SDL_Rect to_sdl_rect(Region2D<T> const& region)
 {
     return SDL_Rect{
         int(region.x), int(region.y),
@@ -169,7 +282,7 @@ inline int random_int(int a, int b)
     return distrib(g);
 }
 
-inline bool check_aabb_collision(Region2D const& a, Region2D const& b)
+inline bool check_aabb_collision(Region2D<double> const& a, Region2D<double> const& b)
 {
     return (
         a.x       < b.x + b.w &&
@@ -188,19 +301,20 @@ void compute_tilemap_collisions(Tilemap const& tilemap, IGameCharacter* c)
                 if (tile_id == collision_tile_id) {
                     auto collision_region_info = c->get_collision_region_information();
                     auto const& collision_region = collision_region_info.collision_region;
-                    auto const& old_collision_region = collision_region_info.old_collision_region;
-                    auto const& collision_region_offset = collision_region_info.collision_region_offset;
-                    auto current_position = c->get_position();
-                    auto current_velocity = c->get_velocity();
 
-                    auto tile_region = Region2D{double(tile_size * j), double(tile_size * i), double(tile_size), double(tile_size)};
+                    auto tile_world_position = Vector2D<int>{TILE_SIZE * j, TILE_SIZE * (HEIGHT - i - 1)};
+                    auto tile_region = Region2D<double>{double(tile_world_position.x), double(tile_world_position.y), double(TILE_SIZE), double(TILE_SIZE)};
 
                     if (check_aabb_collision(collision_region, tile_region)) {
+                        auto const& old_collision_region = collision_region_info.old_collision_region;
+                        auto current_position = c->get_position();
+                        auto current_velocity = c->get_velocity();
+
                         if (
                             collision_region.x + collision_region.w > tile_region.x &&
                             old_collision_region.x + old_collision_region.w <= tile_region.x
                         ) {
-                            c->set_position(tile_region.x - collision_region_offset.x - collision_region.w - 0.1, current_position.y);
+                            c->set_position(tile_region.x - collision_region.w - 0.1, current_position.y);
                             c->set_velocity(0.0, current_velocity.y);
 
                             c->handle_collision(CollisionType::TILEMAP_COLLISION, CollisionSide::RIGHT_COLLISION);
@@ -208,7 +322,7 @@ void compute_tilemap_collisions(Tilemap const& tilemap, IGameCharacter* c)
                             collision_region.x < tile_region.x + tile_region.w &&
                             old_collision_region.x >= tile_region.x + tile_region.w
                         ) {
-                            c->set_position(tile_region.x + tile_region.w - collision_region_offset.x + 0.1, current_position.y);
+                            c->set_position(tile_region.x + tile_region.w + 0.1, current_position.y);
                             c->set_velocity(0.0, current_velocity.y);
 
                             c->handle_collision(CollisionType::TILEMAP_COLLISION, CollisionSide::LEFT_COLLISION);
@@ -216,18 +330,18 @@ void compute_tilemap_collisions(Tilemap const& tilemap, IGameCharacter* c)
                             collision_region.y < tile_region.y + tile_region.h &&
                             old_collision_region.y >= tile_region.y + tile_region.h
                         ) {
-                            c->set_position(current_position.x, tile_region.y + tile_region.h - collision_region_offset.y + 0.1);
+                            c->set_position(current_position.x, tile_region.y + tile_region.h + 0.1);
                             c->set_velocity(current_velocity.x, 0.0);
 
-                            c->handle_collision(CollisionType::TILEMAP_COLLISION, CollisionSide::TOP_COLLISION);
+                            c->handle_collision(CollisionType::TILEMAP_COLLISION, CollisionSide::BOTTOM_COLLISION);
                         } else if (
                             collision_region.y + collision_region.h > tile_region.y &&
                             old_collision_region.y + old_collision_region.h <= tile_region.y
                         ) {
-                            c->set_position(current_position.x, tile_region.y - collision_region.h - collision_region_offset.y - 0.1);
+                            c->set_position(current_position.x, tile_region.y - collision_region.h - 0.1);
                             c->set_velocity(current_velocity.x, 0.0);
                             
-                            c->handle_collision(CollisionType::TILEMAP_COLLISION, CollisionSide::BOTTOM_COLLISION);
+                            c->handle_collision(CollisionType::TILEMAP_COLLISION, CollisionSide::TOP_COLLISION);
                         }
                     }
                 }
@@ -276,7 +390,13 @@ public:
         this->on_finish_animation = f;
     }
 
-    void run(SDL_Renderer* renderer, double elapsedTime, int face, int pos_x, int pos_y)
+    void run(
+        SDL_Renderer* renderer,
+        double elapsedTime,
+        int face,
+        Vector2D<int> world_position,
+        Vector2D<int> sprite_offset
+    )
     {
         this->counter += elapsedTime;
         if (this->counter >= this->animation_time) {
@@ -293,14 +413,14 @@ public:
         auto frame_y = int(0);
         std::tie(frame_x, frame_y) = frames[state];
 
-        auto sprite_rect = SDL_Rect{frame_x * this->framesize_x, frame_y * this->framesize_y, this->framesize_x, this->framesize_y};
-        auto world_rect = SDL_Rect{pos_x, pos_y, this->framesize_x, this->framesize_y};
-
+        auto offset = Vector2D<int>{frame_x * this->framesize_x, frame_y * this->framesize_y};
+        auto size = Vector2D<int>{this->framesize_x, this->framesize_y};
         auto flip = (face == +1) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
-        SDL_RenderCopyEx(renderer, this->spritesheet, &sprite_rect, &world_rect, 0.0, nullptr, flip);
+        auto draw_position = world_position - sprite_offset;
+        draw_sprite(renderer, this->spritesheet, offset, draw_position, size, camera_offset, flip);
     }
-    
-private:
+
+// private:
     SDL_Texture* spritesheet;
     std::vector<std::tuple<int, int>> frames;
     double counter;
@@ -318,30 +438,26 @@ public:
     static auto constexpr TAKING_DAMAGE_ANIMATION = 2;
     static auto constexpr DYING_ANIMATION = 3;
 
-    static auto constexpr collision_offset_x = 30.0;
-    static auto constexpr collision_offset_y = 30.0;
-    static auto constexpr collision_size_x = 18.0;
-    static auto constexpr collision_size_y = 18.0;
+    static auto constexpr collision_offset_x = 30.;
+    static auto constexpr collision_offset_y = 30.;
+    static auto constexpr collision_size = Vector2D<int>{18, 18};
+    static auto constexpr spritesheet_offset = Vector2D<int>{31, 33};
 
     Pig(Pig const& other)
     {
         this->running_side = other.running_side;
 
-        // Force callbacks re-connection, so that the lambda functions are
-        // up-to-date in relation to the lambda captures
+        // Force callbacks re-connection, so that the lambda functions are up-to-date in relation to the lambda captures
         this->animations = other.animations;
         this->connect_callbacks();
 
         this->face = other.face;
-        this->pos_x = other.pos_x;
-        this->pos_y = other.pos_y;
-        this->velocity_x = other.velocity_x;
-        this->velocity_y = other.velocity_y;
+        this->position = other.position;
+        this->old_position = other.old_position;
+        this->velocity = other.velocity;
         this->renderer = other.renderer;
         this->spritesheet = other.spritesheet;
         this->think_timeout = other.think_timeout;
-        this->old_pos_x = other.old_pos_x;
-        this->old_pos_y = other.old_pos_y;
         this->is_taking_damage = other.is_taking_damage;
         this->life = other.life;
         this->is_dying = other.is_dying;
@@ -354,21 +470,17 @@ public:
     {
         this->running_side = other.running_side;
 
-        // Force callbacks re-connection, so that the lambda functions are
-        // up-to-date in relation to the lambda captures
+        // Force callbacks re-connection, so that the lambda functions are up-to-date in relation to the lambda captures
         this->animations = other.animations;
         this->connect_callbacks();
 
         this->face = other.face;
-        this->pos_x = other.pos_x;
-        this->pos_y = other.pos_y;
-        this->velocity_x = other.velocity_x;
-        this->velocity_y = other.velocity_y;
+        this->position = other.position;
+        this->old_position = other.old_position;
+        this->velocity = other.velocity;
         this->renderer = other.renderer;
         this->spritesheet = other.spritesheet;
         this->think_timeout = other.think_timeout;
-        this->old_pos_x = other.old_pos_x;
-        this->old_pos_y = other.old_pos_y;
         this->is_taking_damage = other.is_taking_damage;
         this->life = other.life;
         this->is_dying = other.is_dying;
@@ -379,15 +491,12 @@ public:
 
     Pig(SDL_Renderer* renderer, double pos_x, double pos_y)
         : running_side(0)
-        , pos_x(pos_x)
-        , pos_y(pos_y)
-        , velocity_x(0.0)
-        , velocity_y(0.0)
+        , position{pos_x, pos_y}
+        , old_position{pos_x, pos_y}
+        , velocity{0.0, 0.0}
         , renderer(renderer)
         , spritesheet(load_media("assets/sprites/pig80x80.png", renderer))
         , think_timeout(1000.)
-        , old_pos_x(pos_x)
-        , old_pos_y(pos_y)
         , is_taking_damage(false)
         , life(2)
         , is_dying(false)
@@ -449,43 +558,29 @@ public:
 
     void set_position(double x, double y) override
     {
-        this->pos_x = x;
-        this->pos_y = y;
+        this->position.x = x;
+        this->position.y = y;
     }
 
-    Vector2D get_position() const override
+    Vector2D<double> get_position() const override
     {
-        return Vector2D{this->pos_x, this->pos_y};
+        return this->position;
     }
     
-    Vector2D get_velocity() const override
+    Vector2D<double> get_velocity() const override
     {
-        return Vector2D{this->velocity_x, this->velocity_y};
+        return this->velocity;
     }
     
     void set_velocity(double x, double y) override
     {
-        this->velocity_x = x;
-        this->velocity_y = y;
+        this->velocity.y = x;
+        this->velocity.y = y;
     }
 
     CollisionRegionInformation get_collision_region_information() const override
     {
-        return CollisionRegionInformation{
-            Region2D{
-                this->pos_x + Pig::collision_offset_x,
-                this->pos_y + Pig::collision_offset_y,
-                Pig::collision_size_x,
-                Pig::collision_size_y
-            },
-            Region2D{
-                this->old_pos_x + Pig::collision_offset_x,
-                this->old_pos_y + Pig::collision_offset_y,
-                Pig::collision_size_x,
-                Pig::collision_size_y
-            },
-            Vector2D{Pig::collision_offset_x, Pig::collision_offset_y}
-        };
+        return CollisionRegionInformation(this->position, this->old_position, this->collision_size);
     }
     
     void handle_collision(CollisionType const& type, CollisionSide const& side) override {}
@@ -500,22 +595,20 @@ public:
             this->running_side = 0;
         }
 
-        if (this->running_side == +1) this->velocity_x = +0.05;
-        else if (this->running_side == -1) this->velocity_x = -0.05;
-        else this->velocity_x = 0.0;
-        this->velocity_y = velocity_y + gravity * elapsedTime;
+        if (this->running_side == +1) this->velocity.x = +0.05;
+        else if (this->running_side == -1) this->velocity.x = -0.05;
+        else this->velocity.x = 0.0;
+        this->velocity.y = velocity.y + gravity * elapsedTime;
 
         // Position setup
-        this->old_pos_x = this->pos_x;
-        this->old_pos_y = this->pos_y;
-        this->pos_x += this->velocity_x * elapsedTime;
-        this->pos_y += this->velocity_y * elapsedTime;        
+        this->old_position = this->position;
+        this->position += this->velocity * elapsedTime;
     }
     
     void start_taking_damage()
     {
-        this->velocity_x = 0.05;
-        this->velocity_y = -0.1;
+        this->velocity.x = 0.05;
+        this->velocity.y = -0.1;
         this->is_taking_damage = true;
         if (this->on_start_taking_damage) {
             (*this->on_start_taking_damage)();
@@ -536,7 +629,13 @@ public:
             }
             return IDLE_ANIMATION;
         })();
-        this->animations.at(current_animation).run(this->renderer, elapsedTime, -this->face, this->pos_x, this->pos_y);
+        this->animations.at(current_animation).run(
+            this->renderer,
+            elapsedTime,
+            -this->face,
+            Vector2D<int>{int(this->position.x), int(this->position.y)},
+            this->spritesheet_offset
+        );
     }
 
     void think(double elapsedTime)
@@ -582,15 +681,12 @@ public:
     int running_side;
     std::map<int, Animation> animations;
     int face;
-    double pos_x;
-    double pos_y;
-    double velocity_x;
-    double velocity_y;
+    Vector2D<double> position;
+    Vector2D<double> old_position;
+    Vector2D<double> velocity;
     SDL_Renderer* renderer;
     SDL_Texture* spritesheet;
     double think_timeout;
-    double old_pos_x;
-    double old_pos_y;
     bool is_taking_damage;
     int life;
     bool is_dying;
@@ -648,13 +744,13 @@ public:
 
     static auto constexpr collision_offset_x = 35.;
     static auto constexpr collision_offset_y = 43.;
-    static auto constexpr collision_size_x = 24.;
-    static auto constexpr collision_size_y = 21.;
+    static auto constexpr collision_size = Vector2D<int>{24, 21};
     
+    static auto constexpr spritesheet_offset = Vector2D<int>{37, 32};
+
     Cannon(SDL_Renderer* renderer, double pos_x, double pos_y, int face)
         : face(face)
-        , pos_x(pos_x)
-        , pos_y(pos_y)
+        , position{pos_x, pos_y}
         , is_attacking(false)
         , renderer(renderer)
         , spritesheet(load_media("assets/sprites/cannon96x96.png", renderer))
@@ -693,36 +789,21 @@ public:
 
     void set_position(double x, double y) override {}
 
-    Vector2D get_position() const override
+    Vector2D<double> get_position() const override
     {
-        return Vector2D{this->pos_x, this->pos_y};
+        return this->position;
     }
 
-    Vector2D get_velocity() const override
+    Vector2D<double> get_velocity() const override
     {
-        return Vector2D{0.0, 0.0};
+        return {0.0, 0.0};
     }
 
     void set_velocity(double x, double y) override {}
 
     CollisionRegionInformation get_collision_region_information() const override
     {
-        return CollisionRegionInformation{
-            Region2D{
-                this->pos_x + Cannon::collision_offset_x,
-                this->pos_y + Cannon::collision_offset_y,
-                Cannon::collision_size_x,
-                Cannon::collision_size_y
-            },
-            // Cannons are not movable
-            Region2D{
-                this->pos_x + Cannon::collision_offset_x,
-                this->pos_y + Cannon::collision_offset_y,
-                Cannon::collision_size_x,
-                Cannon::collision_size_y
-            },
-            Vector2D{Cannon::collision_offset_x, Cannon::collision_offset_y}
-        };
+        return CollisionRegionInformation(this->position, this->position, this->collision_size);
     }
 
     void handle_collision(CollisionType const& type, CollisionSide const& side) override {}
@@ -750,14 +831,20 @@ public:
             }
             return IDLE_ANIMATION;
         })();
-        this->animations.at(current_animation).run(this->renderer, elapsedTime, this->face, this->pos_x, this->pos_y);
+
+        this->animations.at(current_animation).run(
+            this->renderer,
+            elapsedTime,
+            this->face,
+            Vector2D<int>{int(this->position.x), int(this->position.y)},
+            this->spritesheet_offset
+        );
     }
 
 public:
     std::map<int, Animation> animations;
     int face;
-    double pos_x;
-    double pos_y;
+    Vector2D<double> position;
     bool is_attacking;
     SDL_Renderer* renderer;
     SDL_Texture* spritesheet;
@@ -781,21 +868,18 @@ public:
 
     static auto constexpr exploding_collision_offset_x = 10.;
     static auto constexpr exploding_collision_offset_y = -10.;
-    static auto constexpr exploding_collision_size_x = 40.;
-    static auto constexpr exploding_collision_size_y = 40.;
-    
-    static auto constexpr ball_exit_offset_x = 23.0;
-    static auto constexpr ball_exit_offset_y = 33.0;    
+    static auto constexpr collision_size = Vector2D<int>{40, 40};
+    static auto constexpr exploding_collision_size = Vector2D<int>{60, 60};
+
+    static auto constexpr ball_exit_offset_x = 23.;
+    static auto constexpr ball_exit_offset_y = 33.;
 
     CannonBall(SDL_Renderer* renderer, double pos_x, double pos_y)
         : animations()
         , boom_animation(nullptr, {}, 0, 0, 100.)
-        , old_pos_x(pos_x)
-        , old_pos_y(pos_y)
-        , pos_x(pos_x)
-        , pos_y(pos_y)
-        , velocity_x(0.0)
-        , velocity_y(0.0)
+        , position{pos_x, pos_y}
+        , old_position{pos_x, pos_y}
+        , velocity{0.0, 0.0}
         , state(CannonBallState::active)
         , renderer(renderer)
         , spritesheet(load_media("assets/sprites/cannonball44x28.png", renderer))
@@ -834,33 +918,31 @@ public:
 
     void update(double elapsedTime) override
     {
-        this->old_pos_x = this->pos_x;
-        this->old_pos_y = this->pos_y;
-        this->pos_x = this->pos_x + this->velocity_x * elapsedTime;
-        this->pos_y = this->pos_y + this->velocity_y * elapsedTime;        
+        this->old_position = this->position;
+        this->position += this->velocity * elapsedTime;
     }
     
     void run_animation(double elapsedTime) override {
         if (this->state == CannonBallState::active) {
-            this->animations.at(IDLE_ANIMATION).run(this->renderer, elapsedTime, +1, int(this->pos_x), int(this->pos_y));
+            this->animations.at(IDLE_ANIMATION).run(this->renderer, elapsedTime, +1, this->position.as_int(), Vector2D<int>{0, 0});
         } else if (this->state == CannonBallState::exploding) {
-            this->boom_animation.run(this->renderer, elapsedTime, +1, int(this->pos_x - 8.0), int(this->pos_y - 28.0));
+            this->boom_animation.run(this->renderer, elapsedTime, +1, this->position.as_int(), Vector2D<int>{-8, -28});
         }
     }
 
     void set_position(double x, double y) override {}
 
-    Vector2D get_position() const override {
-        return Vector2D{this->pos_x, this->pos_y};
+    Vector2D<double> get_position() const override {
+        return this->position;
     }
 
-    Vector2D get_velocity() const override {
-        return Vector2D{this->velocity_x, this->velocity_y};
+    Vector2D<double> get_velocity() const override {
+        return this->velocity;
     }
 
     void set_velocity(double x, double y) override {
-        this->velocity_x = x;
-        this->velocity_y = y;
+        this->velocity.x = x;
+        this->velocity.y = y;
     }
     
     void handle_collision(CollisionType const& type, CollisionSide const& side) override {
@@ -871,53 +953,11 @@ public:
 
     CollisionRegionInformation get_collision_region_information() const override {
         if (this->state == CannonBallState::active) {
-            return CollisionRegionInformation{
-                Region2D{
-                    this->pos_x + CannonBall::collision_offset_x,
-                    this->pos_y + CannonBall::collision_offset_y,
-                    CannonBall::collision_size_x,
-                    CannonBall::collision_size_y
-                },
-                Region2D{
-                    this->old_pos_x + CannonBall::collision_offset_x,
-                    this->old_pos_y + CannonBall::collision_offset_y,
-                    CannonBall::collision_size_x,
-                    CannonBall::collision_size_y
-                },
-                Vector2D{CannonBall::collision_offset_x, CannonBall::collision_offset_y}
-            };
+            return CollisionRegionInformation(this->position, this->old_position, this->collision_size);
         } else if (this->state == CannonBallState::exploding) {
-            return CollisionRegionInformation{
-                Region2D{
-                    this->pos_x + CannonBall::exploding_collision_offset_x,
-                    this->pos_y + CannonBall::exploding_collision_offset_y,
-                    CannonBall::exploding_collision_size_x,
-                    CannonBall::exploding_collision_size_y
-                },
-                Region2D{
-                    this->old_pos_x + CannonBall::exploding_collision_offset_x,
-                    this->old_pos_y + CannonBall::exploding_collision_offset_y,
-                    CannonBall::exploding_collision_size_x,
-                    CannonBall::exploding_collision_size_y
-                },
-                Vector2D{CannonBall::exploding_collision_offset_x, CannonBall::exploding_collision_offset_y}
-            };
+            return CollisionRegionInformation(this->position, this->old_position, this->exploding_collision_size);
         } else {
-            return CollisionRegionInformation{
-                Region2D{
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                },
-                Region2D{
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                },
-                Vector2D{0.0, 0.0}
-            };
+            return CollisionRegionInformation(this->position, this->old_position, {0, 0});
         }
     }
 
@@ -926,18 +966,16 @@ public:
 public:
     std::map<int, Animation> animations;
     Animation boom_animation;
-    double old_pos_x;
-    double old_pos_y;
-    double pos_x;
-    double pos_y;
-    double velocity_x;
-    double velocity_y;
+    Vector2D<double> position;
+    Vector2D<double> old_position;
+    Vector2D<double> velocity;
     CannonBallState state;
     SDL_Renderer* renderer;
     SDL_Texture* spritesheet;
     SDL_Texture* boom_spritesheet;
 };
 
+/*
 class PigWithMatches : public IGameCharacter {
 public:
     static auto constexpr IDLE_ANIMATION = 0;
@@ -947,10 +985,10 @@ public:
 
     static auto constexpr DEFAULT_THINK_TIMEOUT = 5000.0;
 
-    static auto constexpr collision_offset_x = 30.0;
-    static auto constexpr collision_offset_y = 30.0;
-    static auto constexpr collision_size_x = 18.0;
-    static auto constexpr collision_size_y = 18.0;
+    static auto constexpr collision_offset_x = 30.;
+    static auto constexpr collision_offset_y = 30.;
+    static auto constexpr collision_size_x = 18.;
+    static auto constexpr collision_size_y = 18.;
 
     PigWithMatches(SDL_Renderer* renderer, double pos_x, double pos_y, int face, Cannon& cannon)
         : face(face)
@@ -1011,14 +1049,14 @@ public:
         this->pos_y = y;
     }
 
-    Vector2D get_position() const override
+    Vector2D<double> get_position() const override
     {
-        return Vector2D{this->pos_x, this->pos_y};
+        return {this->pos_x, this->pos_y};
     }
     
-    Vector2D get_velocity() const override
+    Vector2D<double> get_velocity() const override
     {
-        return Vector2D{this->velocity_x, this->velocity_y};
+        return {this->velocity_x, this->velocity_y};
     }
     
     void set_velocity(double x, double y) override
@@ -1030,19 +1068,19 @@ public:
     CollisionRegionInformation get_collision_region_information() const override
     {
         return CollisionRegionInformation{
-            Region2D{
+            {
                 this->pos_x + this->collision_offset_x,
                 this->pos_y + this->collision_offset_y,
                 this->collision_size_x,
                 this->collision_size_y
             },
-            Region2D{
+            {
                 this->old_pos_x + this->collision_offset_x,
                 this->old_pos_y + this->collision_offset_y,
                 this->collision_size_x,
                 this->collision_size_y
             },
-            Vector2D{this->collision_offset_x, this->collision_offset_y}
+            {this->collision_offset_x, this->collision_offset_y}
         };
     }
     
@@ -1071,7 +1109,7 @@ public:
             }
             return IDLE_ANIMATION;
         })();
-        this->animations.at(current_animation).run(this->renderer, elapsedTime, -this->face, this->pos_x, this->pos_y);
+//         this->animations.at(current_animation).run(this->renderer, elapsedTime, -this->face, this->pos_x, this->pos_y);
     }
 
 private:
@@ -1103,6 +1141,7 @@ public:
     bool preparing_next_match;
     Cannon& cannon;
 };
+*/
 
 class King : public IGameCharacter {
 public:
@@ -1116,15 +1155,15 @@ public:
     static auto constexpr DYING_ANIMATION = 7;
     static auto constexpr DEAD_ANIMATION = 8;
 
-    static auto constexpr collision_offset_x = 38.;
-    static auto constexpr collision_offset_y = 36.;
-    static auto constexpr collision_size_x = 20.;
-    static auto constexpr collision_size_y = 27.;
+    static auto constexpr collision_size = Vector2D<int>{20, 27};
 
     static auto constexpr attack_region_offset_x = 30.;
     static auto constexpr attack_region_offset_y = -10.;
     static auto constexpr attack_region_w = 10.;
     static auto constexpr attack_region_h = 20.;
+
+    static auto constexpr reference_point = Vector2D<int>{41, 30};
+    static auto constexpr spritesheet_offset = Vector2D<int>{38, 32};
 
 public:
     King(SDL_Renderer* renderer, double pos_x, double pos_y)
@@ -1133,12 +1172,9 @@ public:
         , after_taking_damage_timeout()
         , face(+1)
         , life(2)
-        , old_pos_x(pos_x)
-        , old_pos_y(pos_y)
-        , pos_x(pos_x)
-        , pos_y(pos_y)
-        , velocity_x(0.0)
-        , velocity_y(0.0)
+        , old_position{pos_x, pos_y}
+        , position{pos_x, pos_y}
+        , velocity{0.0, 0.0}
         , renderer(renderer)
         , spritesheet(load_media("assets/sprites/king96x96.png", renderer))
         , is_jumping(false)
@@ -1271,49 +1307,35 @@ public:
     
     void set_position(double x, double y) override
     {
-        this->pos_x = x;
-        this->pos_y = y;
+        this->position.x = x;
+        this->position.y = y;
     }
 
-    Vector2D get_position() const override
+    Vector2D<double> get_position() const override
     {
-        return Vector2D{this->pos_x, this->pos_y};
+        return this->position;
     }
 
-    Vector2D get_velocity() const override
+    Vector2D<double> get_velocity() const override
     {
-        return Vector2D{this->velocity_x, this->velocity_y};
+        return this->velocity;
     }
 
     void set_velocity(double x, double y) override
     {
-        this->velocity_x = x;
-        this->velocity_y = y;
+        this->velocity.x = x;
+        this->velocity.y = y;
     }
 
     CollisionRegionInformation get_collision_region_information() const override
     {
-        return CollisionRegionInformation{
-            Region2D{
-                this->pos_x + King::collision_offset_x,
-                this->pos_y + King::collision_offset_y,
-                King::collision_size_x,
-                King::collision_size_y
-            },
-            Region2D{
-                this->old_pos_x + King::collision_offset_x,
-                this->old_pos_y + King::collision_offset_y,
-                King::collision_size_x,
-                King::collision_size_y
-            },
-            Vector2D{King::collision_offset_x, King::collision_offset_y}
-        };
+        return CollisionRegionInformation(this->position, this->old_position, this->collision_size);
     }
 
     void handle_collision(CollisionType const& type, CollisionSide const& side) override {
         if (type == CollisionType::TILEMAP_COLLISION) {
             if (side == CollisionSide::TOP_COLLISION) {
-                this->set_velocity(0.0, -0.01); // Force response
+                this->set_velocity(0.0, +0.01); // Force response
             } else if (side == CollisionSide::BOTTOM_COLLISION) {
                 this->is_grounded = true;
             }
@@ -1322,9 +1344,9 @@ public:
     
     void on_after_collision() override
     {
-        this->is_falling = (!this->is_grounded && this->velocity_y > 0.0);
-        this->is_jumping = (!this->is_grounded && this->velocity_y < 0.0);
-        if (this->is_grounded && abs(this->pos_y - this->old_pos_y) > 0.1) {
+        this->is_falling = (!this->is_grounded && this->velocity.y < 0.0);
+        this->is_jumping = (!this->is_grounded && this->velocity.y > 0.0);
+        if (this->is_grounded && (this->position.y + 0.1) < this->old_position.y) {
             this->just_touched_ground = true;
         }
     }
@@ -1364,35 +1386,33 @@ public:
     {
         // velocity x setup
         if (!this->is_taking_damage && !this->is_dying && !this->is_dead) {
-            if (this->running_side == +1) this->velocity_x = +0.2;
-            else if (this->running_side == -1) this->velocity_x = -0.2;
-            else this->velocity_x = 0.0;
+            if (this->running_side == +1) this->velocity.x = +0.2;
+            else if (this->running_side == -1) this->velocity.x = -0.2;
+            else this->velocity.x = 0.0;
             
             // velocity y setup
             if (this->start_jumping) {
                 this->start_jumping = false;
                 this->is_grounded = false;
-                this->velocity_y -= 0.4;
+                this->velocity.y += 0.4;
             }
         }
         if (this->is_dead) {
-            this->velocity_x = 0.0;
+            this->velocity.x = 0.0;
         }
-        this->velocity_y += gravity * elapsedTime;
+        this->velocity.y += gravity * elapsedTime;
 
         // Position setup
-        this->old_pos_x = this->pos_x;
-        this->old_pos_y = this->pos_y;
-        this->pos_x = this->pos_x + this->velocity_x * elapsedTime;
-        this->pos_y = this->pos_y + this->velocity_y * elapsedTime;
+        this->old_position = this->position;
+        this->position += this->velocity * elapsedTime;
 
         this->after_taking_damage_timeout.update(elapsedTime);
     }
 
     void start_taking_damage()
     {
-        this->velocity_x = 0.05;
-        this->velocity_y = -0.1;
+        this->velocity.x = 0.05;
+        this->velocity.y = 0.1;
         this->is_taking_damage = true;
         this->life -= 1;
         if (this->on_start_taking_damage) {
@@ -1429,14 +1449,18 @@ public:
             }
             return IDLE_ANIMATION;
         })();
-        this->animations.at(current_animation).run(this->renderer, elapsedTime, this->face, int(this->pos_x), int(this->pos_y));
+        this->animations.at(current_animation).run(
+            this->renderer,
+            elapsedTime,
+            this->face,
+            Vector2D<int>{int(this->position.x), int(this->position.y)},
+            this->spritesheet_offset
+        );
     }
 
-    Region2D attack_region() const {
-        auto collision_region_info = this->get_collision_region_information();
-        auto const& collision_region = collision_region_info.collision_region;
-
-        return Region2D{
+    Region2D<double> attack_region() const {
+        auto const& collision_region = this->get_collision_region_information().collision_region;
+        return {
             collision_region.x + this->face * attack_region_offset_x,
             collision_region.y + attack_region_offset_y,
             collision_region.w + attack_region_w,
@@ -1449,12 +1473,9 @@ public:
     StateTimeout after_taking_damage_timeout;
     int face;
     int life;
-    double old_pos_x;
-    double old_pos_y;
-    double pos_x;
-    double pos_y;
-    double velocity_x;
-    double velocity_y;
+    Vector2D<double> old_position;
+    Vector2D<double> position;
+    Vector2D<double> velocity;
     SDL_Renderer* renderer;
     SDL_Texture* spritesheet;
     bool is_jumping;
@@ -1493,12 +1514,9 @@ void pig_king_collision(Pig* pig_ptr, King* king)
 {
     auto& player = *king;
     auto& pig = *pig_ptr;
-    
-    auto pig_collision_region_info = pig.get_collision_region_information();
-    auto pig_collision_region = pig_collision_region_info.collision_region;
 
-    auto player_collision_region_info = player.get_collision_region_information();
-    auto player_collision_region = player_collision_region_info.collision_region;
+    auto const& pig_collision_region = pig.get_collision_region_information().collision_region;
+    auto const& player_collision_region = player.get_collision_region_information().collision_region;
 
     if (
         player.is_attacking &&
@@ -1529,6 +1547,7 @@ void pig_king_collision(Pig* pig_ptr, King* king)
     }
 }
 
+/*
 void cannon_king_collision(Cannon* cannon_ptr, King* king)
 {
     auto& player = *king;
@@ -1538,8 +1557,7 @@ void cannon_king_collision(Cannon* cannon_ptr, King* king)
         player.is_attacking &&
         !player.is_taking_damage
     ) {
-        auto cannon_collision_region_info = cannon.get_collision_region_information();
-        auto cannon_collision_region = cannon_collision_region_info.collision_region;
+        auto const& cannon_collision_region = cannon.get_collision_region_information().collision_region;
         auto player_attack_region = player.attack_region();
         
         if (check_aabb_collision(player_attack_region, cannon_collision_region)) {
@@ -1588,6 +1606,7 @@ void cannonball_pig_collision(CannonBall* cannon_ptr, Pig* pig_ptr)
         }
     }
 }
+*/
 
 void compute_characters_collisions(std::vector<IGameCharacter*>& game_characters)
 {
@@ -1598,14 +1617,14 @@ void compute_characters_collisions(std::vector<IGameCharacter*>& game_characters
             else if (dynamic_cast<Pig*>(game_characters[i]) && dynamic_cast<King*>(game_characters[j])) { pig_king_collision(dynamic_cast<Pig*>(game_characters[i]), dynamic_cast<King*>(game_characters[j])); }
             else if (dynamic_cast<Pig*>(game_characters[j]) && dynamic_cast<King*>(game_characters[i])) { pig_king_collision(dynamic_cast<Pig*>(game_characters[j]), dynamic_cast<King*>(game_characters[i])); }
 
-            else if (dynamic_cast<Cannon*>(game_characters[i]) && dynamic_cast<King*>(game_characters[j])) { cannon_king_collision(dynamic_cast<Cannon*>(game_characters[i]), dynamic_cast<King*>(game_characters[j])); }
-            else if (dynamic_cast<Cannon*>(game_characters[j]) && dynamic_cast<King*>(game_characters[i])) { cannon_king_collision(dynamic_cast<Cannon*>(game_characters[j]), dynamic_cast<King*>(game_characters[i])); }
+            // else if (dynamic_cast<Cannon*>(game_characters[i]) && dynamic_cast<King*>(game_characters[j])) { cannon_king_collision(dynamic_cast<Cannon*>(game_characters[i]), dynamic_cast<King*>(game_characters[j])); }
+            // else if (dynamic_cast<Cannon*>(game_characters[j]) && dynamic_cast<King*>(game_characters[i])) { cannon_king_collision(dynamic_cast<Cannon*>(game_characters[j]), dynamic_cast<King*>(game_characters[i])); }
 
-            else if (dynamic_cast<CannonBall*>(game_characters[i]) && dynamic_cast<King*>(game_characters[j])) { cannonball_king_collision(dynamic_cast<CannonBall*>(game_characters[i]), dynamic_cast<King*>(game_characters[j])); }
-            else if (dynamic_cast<CannonBall*>(game_characters[j]) && dynamic_cast<King*>(game_characters[i])) { cannonball_king_collision(dynamic_cast<CannonBall*>(game_characters[j]), dynamic_cast<King*>(game_characters[i])); }
+            // else if (dynamic_cast<CannonBall*>(game_characters[i]) && dynamic_cast<King*>(game_characters[j])) { cannonball_king_collision(dynamic_cast<CannonBall*>(game_characters[i]), dynamic_cast<King*>(game_characters[j])); }
+            // else if (dynamic_cast<CannonBall*>(game_characters[j]) && dynamic_cast<King*>(game_characters[i])) { cannonball_king_collision(dynamic_cast<CannonBall*>(game_characters[j]), dynamic_cast<King*>(game_characters[i])); }
 
-            else if (dynamic_cast<CannonBall*>(game_characters[i]) && dynamic_cast<Pig*>(game_characters[j])) { cannonball_pig_collision(dynamic_cast<CannonBall*>(game_characters[i]), dynamic_cast<Pig*>(game_characters[j])); }
-            else if (dynamic_cast<CannonBall*>(game_characters[j]) && dynamic_cast<Pig*>(game_characters[i])) { cannonball_pig_collision(dynamic_cast<CannonBall*>(game_characters[j]), dynamic_cast<Pig*>(game_characters[i])); }
+            // else if (dynamic_cast<CannonBall*>(game_characters[i]) && dynamic_cast<Pig*>(game_characters[j])) { cannonball_pig_collision(dynamic_cast<CannonBall*>(game_characters[i]), dynamic_cast<Pig*>(game_characters[j])); }
+            // else if (dynamic_cast<CannonBall*>(game_characters[j]) && dynamic_cast<Pig*>(game_characters[i])) { cannonball_pig_collision(dynamic_cast<CannonBall*>(game_characters[j]), dynamic_cast<Pig*>(game_characters[i])); }
         }
     }
 }
@@ -1698,7 +1717,7 @@ int main(int argc, char* args[])
     auto window_shaker = StateTimeout(300., [&window_is_shaking](){ window_is_shaking = false; });
 
     auto game_characters = std::vector<IGameCharacter*>();
-    auto player = King(renderer, 120.0, 320.0);
+    auto player = King(renderer, 100.0, 100.0);
     game_characters.push_back(&player);
     int n_pigs = 10;
     for (int i = 0; i < n_pigs; ++i) {
@@ -1707,23 +1726,13 @@ int main(int argc, char* args[])
         auto *pig = new Pig(renderer, pos_x, pos_y);
         game_characters.push_back(pig);
 
+        // TODO: Move this to somewhere else
         pig->on_start_taking_damage = [&window_is_shaking, &window_shaker]() {
             window_is_shaking = true;
             window_shaker.restart();
         };
     }
-    for (int i = 0; i < 2 * n_pigs; ++i) {
-        auto pos_x = 300 + 5 * i;
-        auto pos_y = 72;
-        auto *pig = new Pig(renderer, pos_x, pos_y);
-        game_characters.push_back(pig);
 
-        pig->on_start_taking_damage = [&window_is_shaking, &window_shaker]() {
-            window_is_shaking = true;
-            window_shaker.restart();
-        };
-    }
-    
     auto cannon = Cannon(renderer, 80.0, 64.0, -1);
     game_characters.push_back(&cannon);
     cannon.set_on_before_fire([&game_characters, &renderer, &cannon]() {
@@ -1732,8 +1741,8 @@ int main(int argc, char* args[])
         ball->set_velocity(+0.4, 0.0);
         game_characters.push_back(ball);
     });
-    auto pig_with_match = PigWithMatches(renderer, 56., 64., +1, cannon);
-    game_characters.push_back(&pig_with_match);
+//     auto pig_with_match = PigWithMatches(renderer, 56., 64., +1, cannon);
+//     game_characters.push_back(&pig_with_match);
 
     auto last = (unsigned long long)(0);
     auto current = SDL_GetPerformanceCounter();
@@ -1751,8 +1760,7 @@ int main(int argc, char* args[])
     };
     
     transition_animation.register_transition_callback([&player]() {
-        player.pos_x = 120.0;
-        player.pos_y = 320.0;
+        player.set_position(100.0, 100.0);
         player.is_dead = false;
         player.life = 2;
     });
@@ -1809,6 +1817,7 @@ int main(int argc, char* args[])
             game_characters.end()
         );
 
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
 
         // Draw background
@@ -1820,51 +1829,54 @@ int main(int argc, char* args[])
                 // Background
                 {
                     auto tile_id = tilemap[i][j];
-                    auto offset_x = 32 * (tile_id % 12);
-                    auto offset_y = 32 * int(floor(tile_id / 12));
-                    auto size = SDL_Rect{offset_x, offset_y, 32, 32};
-                    auto position = SDL_Rect{32 * j + shake_x, 32 * i + shake_y, 32, 32};
-                    SDL_RenderCopyEx(renderer, tileset, &size, &position, 0.0, nullptr, SDL_FLIP_NONE);
+                    auto offset = Vector2D<int>{TILE_SIZE * (tile_id % 12), TILE_SIZE * int(floor(tile_id / 12))};
+                    auto world_position = Vector2D<int>{TILE_SIZE * j + shake_x, TILE_SIZE * (HEIGHT - i - 1) + shake_y};
+                    auto size = Vector2D<int>{TILE_SIZE, TILE_SIZE};
+                    draw_sprite(renderer, tileset, offset, world_position, size, camera_offset);
 
                     if (show_debug) {
                         SDL_SetRenderDrawColor(renderer, 255, 0, 0, 40);
                         for (auto&& collision_tile_id : collision_tiles) {
                             if (tile_id == collision_tile_id) {
-                                SDL_RenderFillRect(renderer, &position);
+                                auto camera_position = to_camera_position(world_position, size, camera_offset);
+                                auto dstrect = SDL_Rect{camera_position.x, camera_position.y, SCALE_SIZE * size.x, SCALE_SIZE * size.y};
+                                SDL_RenderFillRect(renderer, &dstrect);
                             }
                         }
-                    }                            
+                    }
                 }
 
                 // Foreground
                 {
                     auto tile_id = foreground[i][j];
-                    auto offset_x = 32 * (tile_id % 7);
-                    auto offset_y = 32 * int(floor(tile_id / 7));
-                    auto size = SDL_Rect{offset_x, offset_y, 32, 32};
-                    auto position = SDL_Rect{32 * j + shake_x, 32 * i + shake_y, 32, 32};
-                    SDL_RenderCopyEx(renderer, foreground_set, &size, &position, 0.0, nullptr, SDL_FLIP_NONE);
+                    auto offset = Vector2D<int>{TILE_SIZE * (tile_id % 7), TILE_SIZE * int(floor(tile_id / 7))};
+                    auto world_position = Vector2D<int>{TILE_SIZE * j + shake_x, TILE_SIZE * (HEIGHT - i - 1) + shake_y};
+                    auto size = Vector2D<int>{TILE_SIZE, TILE_SIZE};
+                    draw_sprite(renderer, foreground_set, offset, world_position, size, camera_offset);
                 }
 
                 // Interactibles
                 {
-                    auto size = SDL_Rect{0, 0, 46, 56};
-                    auto position = SDL_Rect{128 + shake_x, 329 + shake_y, 46, 56};
-                    SDL_RenderCopyEx(renderer, door, &size, &position, 0.0, nullptr, SDL_FLIP_NONE);                    
+                    auto offset = Vector2D<int>{0, 0};
+                    auto world_position = Vector2D<int>{128 + shake_x, 192 + shake_y};
+                    auto size = Vector2D<int>{46, 56};
+                    draw_sprite(renderer, door, offset, world_position, size, camera_offset);
                 }
                 
                 // HUD
                 {
                     {
-                        auto size = SDL_Rect{0, 0, 66, 34};
-                        auto position = SDL_Rect{10, 10, 66, 34};
-                        SDL_RenderCopyEx(renderer, lifebar, &size, &position, 0.0, nullptr, SDL_FLIP_NONE);
+                        auto offset = Vector2D<int>{0, 0};
+                        auto size = Vector2D<int>{66, 34};
+                        auto static_camera_position = Vector2D<int>{10, SCREEN_HEIGHT / SCALE_SIZE - size.y - 10};
+                        draw_static_sprite(renderer, lifebar, offset, static_camera_position, size);
                     }
 
+                    auto offset = Vector2D<int>{0, 0};
+                    auto size = Vector2D<int>{18, 14};
                     for (int i = 0; i < player.life; ++i) {
-                        auto size = SDL_Rect{0, 0, 18, 14};
-                        auto position = SDL_Rect{20 + 12 * i, 20, 18, 14};
-                        SDL_RenderCopyEx(renderer, lifebar_heart, &size, &position, 0.0, nullptr, SDL_FLIP_NONE);
+                        auto camera_position = Vector2D<int>{21 + 11 * i, SCREEN_HEIGHT / SCALE_SIZE - size.y - 20};
+                        draw_static_sprite(renderer, lifebar_heart, offset, camera_position, size);
                     }
                 }
             }
@@ -1874,8 +1886,13 @@ int main(int argc, char* args[])
             game_character->run_animation(elapsedTime);
         }
         transition_animation.run(renderer, elapsedTime);
-
-        debug_messages.push_back("Position: " + std::to_string(player.pos_x) + ", " + std::to_string(player.pos_y) + ")");
+        
+        int mousex = 0;
+        int mousey = 0;
+        SDL_GetMouseState(&mousex, &mousey);
+        debug_messages.push_back("Mouse (Camera ): " + std::to_string(mousex) + ", " + std::to_string(mousey));
+        Vector2D world_mouse = to_world_position(Vector2D<int>{mousex, mousey}, Vector2D<int>{0, 0}, camera_offset);
+        debug_messages.push_back("Mouse (World): " + std::to_string(int(world_mouse.x)) + ", " + std::to_string(int(world_mouse.y)));
         if (show_debug) {
             auto r = (Uint8)(0);
             auto g = (Uint8)(0);
@@ -1884,19 +1901,56 @@ int main(int argc, char* args[])
             SDL_GetRenderDrawColor(renderer, &r, &g, &b, &a);
             SDL_SetRenderDrawColor(renderer, 255, 0, 0, 90);
 
-            for (auto* c : game_characters) {
-                auto collision_region_info = c->get_collision_region_information();
-                auto collision_rect = to_sdl_rect(collision_region_info.collision_region);
+            for (auto& game_character : game_characters) {
+                auto const& collision_region = game_character->get_collision_region_information().collision_region;
+                auto camera_position = to_camera_position(
+                    Vector2D<int>{int(collision_region.x), int(collision_region.y)},
+                    Vector2D<int>{int(collision_region.w), int(collision_region.h)},
+                    camera_offset
+                );
+                auto collision_rect = to_sdl_rect(Region2D<int>{
+                    camera_position.x,
+                    camera_position.y,
+                    int(SCALE_SIZE * collision_region.w),
+                    int(SCALE_SIZE * collision_region.h)
+                });
                 SDL_RenderFillRect(renderer, &collision_rect);
             }
-            auto player_attack_region = player.attack_region();
-            auto player_attack_rect = to_sdl_rect(player_attack_region);
-            SDL_RenderFillRect(renderer, &player_attack_rect);
 
+//             for (auto* c : game_characters) {
+//                 auto const& collision_region = c->get_collision_region_information().collision_region;
+//                 auto const& collision_size = c->get_collision_region_information().collision_region_offset;
+//                 auto camera_position = to_camera_position(
+//                     Vector2D<int>{int(collision_region.x), int(collision_region.y)},
+//                     Vector2D<int>{0, 0}
+//                 );
+//                 auto collision_rect = to_sdl_rect(Region2D<int>{camera_position.x, camera_position.y, collision_region.w, collision_region.h});
+//                 SDL_RenderFillRect(renderer, &collision_rect);
+//             }
+//             auto player_attack_region = player.attack_region();
+//             auto player_attack_position = to_camera_position(
+//                 Vector2D<int>{int(player_attack_region.x), int(player_attack_region.y)},
+//                 Vector2D<int>{0, 0}
+//             );
+//             auto player_attack_rect = to_sdl_rect(Region2D<int>{player_attack_position.x, player_attack_position.y, player_attack_region.w, player_attack_region.h});
+//             SDL_RenderFillRect(renderer, &player_attack_rect);
+// 
             debug_text(debug_messages, renderer, default_font, 10, 10);
             SDL_SetRenderDrawColor(renderer, r, g, b, a);
-        }        
-        
+        }
+
+        {
+            if (keystates[SDL_SCANCODE_A]) {
+                camera_offset.x -= 1;
+            } else if (keystates[SDL_SCANCODE_D]) {
+                camera_offset.x += 1;
+            } else if (keystates[SDL_SCANCODE_W]) {
+                camera_offset.y += 1;
+            } else if (keystates[SDL_SCANCODE_S]) {
+                camera_offset.y -= 1;
+            }
+        }
+
         SDL_RenderPresent(renderer);
     }
 
