@@ -50,4 +50,10 @@ struct Region2D {
     T h;
 };
 
+struct RGBColor {
+    int r;
+    int g;
+    int b;
+};
+
 #endif

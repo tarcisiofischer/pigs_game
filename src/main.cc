@@ -1090,7 +1090,7 @@ public:
             this->just_touched_ground = true;
         }
     }
-
+    
     void handle_controller(const unsigned char* keystates)
     {
         // Player handling
@@ -1193,10 +1193,13 @@ public:
             this->renderer,
             elapsedTime,
             this->face,
-            Vector2D<int>{int(this->position.x), int(this->position.y)},
+            this->position.as_int(),
             this->spritesheet_offset,
             camera_offset
         );
+        for (auto &on_after_run_animation : this->on_after_run_animation_callbacks) {
+            on_after_run_animation(this->renderer, this, elapsedTime);
+        }
     }
 
     Region2D<double> attack_region() const {
@@ -1211,6 +1214,7 @@ public:
 
     int running_side;
     std::map<int, Animation> animations;
+    std::vector<std::function<void(SDL_Renderer*, IGameCharacter*, double)>> on_after_run_animation_callbacks;
     StateTimeout after_taking_damage_timeout;
     int face;
     int life;
@@ -1458,6 +1462,38 @@ int main(int argc, char* args[])
 
     auto game_characters = std::vector<IGameCharacter*>();
     auto player = King(renderer, 100.0, 100.0);
+
+    // TODO: Continue dialog message
+    /*
+    player.on_after_run_animation_callbacks.push_back([&monogram](SDL_Renderer* renderer, IGameCharacter* player, double elapsedTime)
+    {
+        SDL_SetRenderDrawColor(renderer, 230, 230, 230, 220);
+
+        auto player_world_position = player->get_position().as_int();
+        auto player_camera_position = to_camera_position(
+            player_world_position + Vector2D<int>{10, 40},
+            {0, 0},
+            camera_offset
+        );
+        // Talking area
+        auto message = std::string("Hello world!");
+        auto collision_rect = to_sdl_rect(Region2D<int>{
+            player_camera_position.x - 5,
+            player_camera_position.y - 5,
+            5 + int(message.size()) * 6 + 5,
+            5 + 6 * 1 + 5,
+        });
+        SDL_RenderFillRect(renderer, &collision_rect);
+        gout(
+            renderer,
+            monogram,
+            player_camera_position,
+            message,
+            RGBColor{218, 73, 73}
+        );
+    });
+    */
+
     game_characters.push_back(&player);
     int n_pigs = 10;
     for (int i = 0; i < n_pigs; ++i) {
@@ -1651,7 +1687,7 @@ int main(int argc, char* args[])
             SDL_RenderFillRect(renderer, &debug_area_rect);
             auto text_position = Vector2D<int>{10, 10};
             for (auto const& message : debug_messages) {
-                gout(renderer, monogram, text_position, message);
+                gout(renderer, monogram, text_position, message, RGBColor{100, 240, 100});
                 text_position.y += 10;
             }
 

@@ -66,7 +66,8 @@ void gout(
     SDL_Renderer* renderer,
     SDL_Texture* spritesheet,
     Vector2D<int> const& static_camera_position,
-    std::string const& message
+    std::string const& message,
+    RGBColor const& text_color
 )
 {
     auto size = Vector2D<int>{6, 9};
@@ -74,7 +75,7 @@ void gout(
     auto dstrect = SDL_Rect{static_camera_position.x, static_camera_position.y, size.x, size.y};
     auto const& charmap = MonogramFont::charmap();
 
-    SDL_SetTextureColorMod(spritesheet, 255 - 80, 255 - 90, 255 - 70);
+    SDL_SetTextureColorMod(spritesheet, text_color.r, text_color.g, text_color.b);
     for (auto const& c : message) {
         auto const& charmap_pos = charmap.at(c);
         srcrect.x = size.x * charmap_pos.x;
