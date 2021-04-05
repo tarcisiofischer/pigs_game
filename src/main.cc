@@ -2,6 +2,7 @@
 #include <SDL_image.h>
 #include <SDL_ttf.h>
 
+#include <algorithm>
 #include <iostream>
 #include <functional>
 #include <optional>
@@ -12,183 +13,17 @@
 #include <map>
 #include <variant>
 
-auto constexpr WIDTH = 25;
-auto constexpr HEIGHT = 18;
-auto constexpr SCALE_SIZE = 2;
-auto constexpr TILE_SIZE = 32;
-auto constexpr SCREEN_WIDTH = 600 * SCALE_SIZE;
-auto constexpr SCREEN_HEIGHT = 300 * SCALE_SIZE;
-
-auto constexpr gravity = -0.001;
-
-auto constexpr collision_tiles = std::array<int, 10>{1, 3, 12, 14, 15, 25, 27, 37, 38, 39};
+#include <Animation.hpp>
+#include <IGameCharacter.hpp>
+#include <Vector2D.hpp>
+#include <constants.hpp>
 
 std::vector<std::string> debug_messages;
 
 using Tilemap = std::array<std::array<int, WIDTH>, HEIGHT>;
 
-template<typename T>
-struct Vector2D {
-    Vector2D<T> operator-(Vector2D<T> const& other) const
-    {
-        return Vector2D<T>{this->x - other.x, this->y - other.y};
-    }
-
-    Vector2D<T> operator+(Vector2D<T> const& other) const
-    {
-        return Vector2D<T>{this->x + other.x, this->y + other.y};
-    }
-
-    Vector2D<T>& operator+=(Vector2D<T> const& other)
-    {
-        this->x += other.x;
-        this->y += other.y;
-        return *this;
-    }
-
-    Vector2D<T>& operator-=(Vector2D<T> const& other)
-    {
-        this->x -= other.x;
-        this->y -= other.y;
-        return *this;
-    }
-
-    template <typename U>
-    Vector2D<T> operator*(U const& other) const
-    {
-        return Vector2D<T>{other * this->x, other * this->y};
-    }
-
-    Vector2D<int> as_int() const
-    {
-        return Vector2D<int>{int(this->x), int(this->y)};
-    }
-    
-    T x;
-    T y;
-};
-
 // TODO: Initialize the camera on main (avoid global)
 auto camera_offset = Vector2D<int>{0, 0};
-
-template<typename T>
-struct Region2D {
-    T x;
-    T y;
-    T w;
-    T h;
-};
-
-inline Vector2D<int> to_world_position(
-    Vector2D<int> const& camera_position,
-    Vector2D<int> const& size,
-    Vector2D<int> const& camera_offset
-)
-{
-    return {
-        camera_position.x / SCALE_SIZE + camera_offset.x,
-        ((camera_position.y - SCREEN_HEIGHT) / SCALE_SIZE) * -1 - size.y + camera_offset.y
-    };
-}
-
-inline Vector2D<int> to_camera_position(
-    Vector2D<int> const& world_position,
-    Vector2D<int> const& size,
-    Vector2D<int> const& camera_offset
-)
-{
-    return {
-        SCALE_SIZE * (world_position.x - camera_offset.x),
-        SCALE_SIZE * ((world_position.y + size.y - camera_offset.y) / -1) + SCREEN_HEIGHT
-    };
-}
-
-void draw_sprite(
-    SDL_Renderer* renderer,
-    SDL_Texture* spritesheet,
-    Vector2D<int> const& sprite_offset,
-    Vector2D<int> const& world_position,
-    Vector2D<int> const& size,
-    Vector2D<int> const& camera_offset,
-    SDL_RendererFlip const& flip=SDL_FLIP_NONE
-) {
-    auto srcrect = SDL_Rect{sprite_offset.x, sprite_offset.y, size.x, size.y};
-    auto camera_position = to_camera_position(world_position, size, camera_offset);
-    auto dstrect = SDL_Rect{camera_position.x, camera_position.y, SCALE_SIZE * size.x, SCALE_SIZE * size.y};
-    SDL_RenderCopyEx(renderer, spritesheet, &srcrect, &dstrect, 0.0, nullptr, flip);
-}
-
-void draw_static_sprite(
-    SDL_Renderer* renderer,
-    SDL_Texture* spritesheet,
-    Vector2D<int> const& sprite_offset,
-    Vector2D<int> const& static_camera_position,
-    Vector2D<int> const& size,
-    SDL_RendererFlip const& flip=SDL_FLIP_NONE
-) {
-    auto srcrect = SDL_Rect{sprite_offset.x, sprite_offset.y, size.x, size.y};
-    auto camera_position = to_camera_position(static_camera_position, size, {0, 0});
-    auto dstrect = SDL_Rect{camera_position.x, camera_position.y, SCALE_SIZE * size.x, SCALE_SIZE * size.y};
-    SDL_RenderCopyEx(renderer, spritesheet, &srcrect, &dstrect, 0.0, nullptr, flip);
-}
-
-enum class CollisionType {
-    TILEMAP_COLLISION = 0
-};
-
-enum class CollisionSide {
-    LEFT_COLLISION = 0,
-    RIGHT_COLLISION = 1,
-    TOP_COLLISION = 2,
-    BOTTOM_COLLISION = 3
-};
-
-struct CollisionRegionInformation
-{
-    CollisionRegionInformation(
-        Vector2D<double> position,
-        Vector2D<double> old_position,
-        Vector2D<int> collision_size
-    )
-        : collision_region{
-            position.x,
-            position.y,
-            double(collision_size.x),
-            double(collision_size.y)
-        }
-        , old_collision_region{
-            old_position.x,
-            old_position.y,
-            double(collision_size.x),
-            double(collision_size.y)
-        }
-        {}
-
-    const Region2D<double> collision_region;
-    const Region2D<double> old_collision_region;
-};
-
-class IGameCharacter
-{
-public:
-    virtual void update(double elapsedTime) = 0;
-    virtual void run_animation(double elapsedTime) = 0;
-    virtual void set_position(double x, double y) = 0;
-    virtual Vector2D<double> get_position() const = 0;
-    virtual Vector2D<double> get_velocity() const = 0;
-    virtual void set_velocity(double x, double y) = 0;
-    virtual void handle_collision(CollisionType const& type, CollisionSide const& side) = 0;
-    virtual CollisionRegionInformation get_collision_region_information() const = 0;
-    virtual void on_after_collision() = 0;
-};
-
-template<typename T>
-SDL_Rect to_sdl_rect(Region2D<T> const& region)
-{
-    return SDL_Rect{
-        int(region.x), int(region.y),
-        int(region.w), int(region.h)};
-}
 
 class TransitionAnimation
 {
@@ -365,71 +200,6 @@ SDL_Texture* load_media(std::string const& filename, SDL_Renderer* renderer)
     SDL_FreeSurface(surface);
     return texture;
 }
-
-class Animation
-{
-public:
-    Animation(
-        SDL_Texture* spritesheet,
-        std::vector<std::tuple<int, int>> const& frames,
-        int framesize_x,
-        int framesize_y,
-        double animation_time
-    )
-        : spritesheet(spritesheet)
-        , frames(frames)
-        , state(0)
-        , framesize_x(framesize_x)
-        , framesize_y(framesize_y)
-        , animation_time(animation_time)
-    {
-    }
-    
-    void set_on_finish_animation_callback(std::function<void()> const& f)
-    {
-        this->on_finish_animation = f;
-    }
-
-    void run(
-        SDL_Renderer* renderer,
-        double elapsedTime,
-        int face,
-        Vector2D<int> world_position,
-        Vector2D<int> sprite_offset
-    )
-    {
-        this->counter += elapsedTime;
-        if (this->counter >= this->animation_time) {
-            this->state += 1;
-            if ((this->state % this->frames.size()) == 0) {
-                this->state = 0;
-                if (this->on_finish_animation) {
-                    (*this->on_finish_animation)();
-                }
-            }
-            this->counter = 0.0;
-        }
-        auto frame_x = int(0);
-        auto frame_y = int(0);
-        std::tie(frame_x, frame_y) = frames[state];
-
-        auto offset = Vector2D<int>{frame_x * this->framesize_x, frame_y * this->framesize_y};
-        auto size = Vector2D<int>{this->framesize_x, this->framesize_y};
-        auto flip = (face == +1) ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
-        auto draw_position = world_position - sprite_offset;
-        draw_sprite(renderer, this->spritesheet, offset, draw_position, size, camera_offset, flip);
-    }
-
-// private:
-    SDL_Texture* spritesheet;
-    std::vector<std::tuple<int, int>> frames;
-    double counter;
-    int state;
-    std::optional<std::function<void()>> on_finish_animation;
-    int framesize_x;
-    int framesize_y;
-    double animation_time;
-};
 
 class Pig : public IGameCharacter {
 public:
@@ -634,7 +404,8 @@ public:
             elapsedTime,
             -this->face,
             Vector2D<int>{int(this->position.x), int(this->position.y)},
-            this->spritesheet_offset
+            this->spritesheet_offset,
+            camera_offset
         );
     }
 
@@ -837,7 +608,8 @@ public:
             elapsedTime,
             this->face,
             Vector2D<int>{int(this->position.x), int(this->position.y)},
-            this->spritesheet_offset
+            this->spritesheet_offset,
+            camera_offset
         );
     }
 
@@ -924,9 +696,9 @@ public:
     
     void run_animation(double elapsedTime) override {
         if (this->state == CannonBallState::active) {
-            this->animations.at(IDLE_ANIMATION).run(this->renderer, elapsedTime, +1, this->position.as_int(), Vector2D<int>{0, 0});
+            this->animations.at(IDLE_ANIMATION).run(this->renderer, elapsedTime, +1, this->position.as_int(), Vector2D<int>{0, 0}, camera_offset);
         } else if (this->state == CannonBallState::exploding) {
-            this->boom_animation.run(this->renderer, elapsedTime, +1, this->position.as_int(), Vector2D<int>{-8, -28});
+            this->boom_animation.run(this->renderer, elapsedTime, +1, this->position.as_int(), Vector2D<int>{-8, -28}, camera_offset);
         }
     }
 
@@ -1454,7 +1226,8 @@ public:
             elapsedTime,
             this->face,
             Vector2D<int>{int(this->position.x), int(this->position.y)},
-            this->spritesheet_offset
+            this->spritesheet_offset,
+            camera_offset
         );
     }
 
@@ -1950,6 +1723,15 @@ int main(int argc, char* args[])
                 camera_offset.y -= 1;
             }
         }
+
+        // Update camera
+        auto position = player.get_position().as_int();
+        auto camera_min_x = 0;
+        auto camera_max_x = 200;
+        auto camera_min_y = 0;
+        auto camera_max_y = 220;
+        camera_offset.x = std::max(camera_min_x, std::min(position.x - SCREEN_WIDTH / (2 * SCALE_SIZE), camera_max_x));
+        camera_offset.y = std::max(camera_min_y, std::min(position.y - SCREEN_HEIGHT / (2 * SCALE_SIZE), camera_max_y));
 
         SDL_RenderPresent(renderer);
     }
