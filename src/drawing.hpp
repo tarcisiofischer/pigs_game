@@ -7,6 +7,7 @@
 
 #include <Vector2D.hpp>
 #include <constants.hpp>
+#include <bitmap_font.hpp>
 
 inline Vector2D<int> to_world_position(
     Vector2D<int> const& camera_position,
@@ -61,6 +62,27 @@ void draw_static_sprite(
     SDL_RenderCopyEx(renderer, spritesheet, &srcrect, &dstrect, 0.0, nullptr, flip);
 }
 
+void gout(
+    SDL_Renderer* renderer,
+    SDL_Texture* spritesheet,
+    Vector2D<int> const& static_camera_position,
+    std::string const& message
+)
+{
+    auto size = Vector2D<int>{6, 9};
+    auto srcrect = SDL_Rect{0, 0, size.x, size.y};
+    auto dstrect = SDL_Rect{static_camera_position.x, static_camera_position.y, size.x, size.y};
+    auto const& charmap = MonogramFont::charmap();
+
+    SDL_SetTextureColorMod(spritesheet, 255 - 80, 255 - 90, 255 - 70);
+    for (auto const& c : message) {
+        auto const& charmap_pos = charmap.at(c);
+        srcrect.x = size.x * charmap_pos.x;
+        srcrect.y = size.y * charmap_pos.y;
+        SDL_RenderCopy(renderer, spritesheet, &srcrect, &dstrect);
+        dstrect.x += size.x;
+    }
+}
 
 template<typename T>
 SDL_Rect to_sdl_rect(Region2D<T> const& region)

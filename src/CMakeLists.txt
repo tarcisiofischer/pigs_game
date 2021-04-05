@@ -8,6 +8,7 @@ add_executable(
    PigsGame
    main.cc
 
+   bitmap_font.hpp
    constants.hpp
    drawing.hpp
 

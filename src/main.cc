@@ -639,7 +639,6 @@ public:
     static auto constexpr collision_size_y = 12.;
 
     static auto constexpr collision_size = Vector2D<int>{20, 20};
-    static auto constexpr exploding_collision_size = Vector2D<int>{60, 60};
 
     static auto constexpr ball_exit_offset_x = 8.;
     static auto constexpr ball_exit_offset_y = 2.;
@@ -696,7 +695,7 @@ public:
         if (this->state == CannonBallState::active) {
             this->animations.at(IDLE_ANIMATION).run(this->renderer, elapsedTime, +1, this->position.as_int(), Vector2D<int>{20, 0}, camera_offset);
         } else if (this->state == CannonBallState::exploding) {
-            this->boom_animation.run(this->renderer, elapsedTime, +1, this->position.as_int(), Vector2D<int>{10, 12}, camera_offset);
+            this->boom_animation.run(this->renderer, elapsedTime, +1, this->position.as_int(), Vector2D<int>{30, 27}, camera_offset);
         }
     }
 
@@ -718,18 +717,14 @@ public:
     void handle_collision(CollisionType const& type, CollisionSide const& side) override {
         if (type == CollisionType::TILEMAP_COLLISION) {
             this->state = CannonBallState::exploding;
-            this->position.x -= 5;
-            this->position.y -= 5;
         }
     }
 
     CollisionRegionInformation get_collision_region_information() const override {
-        if (this->state == CannonBallState::active) {
+        if (this->state == CannonBallState::active || this->state == CannonBallState::exploding) {
             return CollisionRegionInformation(this->position, this->old_position, this->collision_size);
-        } else if (this->state == CannonBallState::exploding) {
-            return CollisionRegionInformation(this->position, this->old_position, this->exploding_collision_size);
         } else {
-            return CollisionRegionInformation(this->position, this->old_position, {0, 0});
+            return CollisionRegionInformation({0, 0}, {0, 0}, {0, 0});
         }
     }
 
@@ -1456,6 +1451,7 @@ int main(int argc, char* args[])
     auto lifebar = load_spritesheet("lifebar.png");
     auto lifebar_heart = load_spritesheet("small_heart18x14.png");
     auto door = load_spritesheet("door46x56.png");
+    auto monogram = load_spritesheet("monogram.png");
 
     auto window_is_shaking = false;
     auto window_shaker = StateTimeout(300., [&window_is_shaking](){ window_is_shaking = false; });
@@ -1643,8 +1639,23 @@ int main(int argc, char* args[])
             auto b = (Uint8)(0);
             auto a = (Uint8)(0);
             SDL_GetRenderDrawColor(renderer, &r, &g, &b, &a);
-            SDL_SetRenderDrawColor(renderer, 255, 0, 0, 90);
 
+            auto debug_area_rect = to_sdl_rect(Region2D<int>{
+                0,
+                0,
+                SCREEN_WIDTH,
+                80
+            });
+
+            SDL_SetRenderDrawColor(renderer, 65, 60, 70, 220);
+            SDL_RenderFillRect(renderer, &debug_area_rect);
+            auto text_position = Vector2D<int>{10, 10};
+            for (auto const& message : debug_messages) {
+                gout(renderer, monogram, text_position, message);
+                text_position.y += 10;
+            }
+
+            SDL_SetRenderDrawColor(renderer, 255, 0, 0, 90);
             for (auto& game_character : game_characters) {
                 auto const& collision_region = game_character->get_collision_region_information().collision_region;
                 auto camera_position = to_camera_position(
@@ -1661,30 +1672,19 @@ int main(int argc, char* args[])
                 SDL_RenderFillRect(renderer, &collision_rect);
             }
 
-            debug_text(debug_messages, renderer, default_font, 10, 10);
             SDL_SetRenderDrawColor(renderer, r, g, b, a);
         }
 
-        {
-            if (keystates[SDL_SCANCODE_A]) {
-                camera_offset.x -= 1;
-            } else if (keystates[SDL_SCANCODE_D]) {
-                camera_offset.x += 1;
-            } else if (keystates[SDL_SCANCODE_W]) {
-                camera_offset.y += 1;
-            } else if (keystates[SDL_SCANCODE_S]) {
-                camera_offset.y -= 1;
-            }
-        }
-
         // Update camera
-        auto position = player.get_position().as_int();
-        auto camera_min_x = 0;
-        auto camera_max_x = 200;
-        auto camera_min_y = 0;
-        auto camera_max_y = 220;
-        camera_offset.x = std::max(camera_min_x, std::min(position.x - SCREEN_WIDTH / (2 * SCALE_SIZE), camera_max_x));
-        camera_offset.y = std::max(camera_min_y, std::min(position.y - SCREEN_HEIGHT / (2 * SCALE_SIZE), camera_max_y));
+        {
+            auto position = player.get_position().as_int();
+            auto camera_min_x = 0;
+            auto camera_max_x = 200;
+            auto camera_min_y = 0;
+            auto camera_max_y = 220;
+            camera_offset.x = std::max(camera_min_x, std::min(position.x - SCREEN_WIDTH / (2 * SCALE_SIZE), camera_max_x));
+            camera_offset.y = std::max(camera_min_y, std::min(position.y - SCREEN_HEIGHT / (2 * SCALE_SIZE), camera_max_y));
+        }
 
         SDL_RenderPresent(renderer);
     }
