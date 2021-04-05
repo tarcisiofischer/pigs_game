@@ -638,13 +638,11 @@ public:
     static auto constexpr collision_size_x = 12.;
     static auto constexpr collision_size_y = 12.;
 
-    static auto constexpr exploding_collision_offset_x = 10.;
-    static auto constexpr exploding_collision_offset_y = -10.;
-    static auto constexpr collision_size = Vector2D<int>{40, 40};
+    static auto constexpr collision_size = Vector2D<int>{20, 20};
     static auto constexpr exploding_collision_size = Vector2D<int>{60, 60};
 
-    static auto constexpr ball_exit_offset_x = 23.;
-    static auto constexpr ball_exit_offset_y = 33.;
+    static auto constexpr ball_exit_offset_x = 8.;
+    static auto constexpr ball_exit_offset_y = 2.;
 
     CannonBall(SDL_Renderer* renderer, double pos_x, double pos_y)
         : animations()
@@ -696,9 +694,9 @@ public:
     
     void run_animation(double elapsedTime) override {
         if (this->state == CannonBallState::active) {
-            this->animations.at(IDLE_ANIMATION).run(this->renderer, elapsedTime, +1, this->position.as_int(), Vector2D<int>{0, 0}, camera_offset);
+            this->animations.at(IDLE_ANIMATION).run(this->renderer, elapsedTime, +1, this->position.as_int(), Vector2D<int>{20, 0}, camera_offset);
         } else if (this->state == CannonBallState::exploding) {
-            this->boom_animation.run(this->renderer, elapsedTime, +1, this->position.as_int(), Vector2D<int>{-8, -28}, camera_offset);
+            this->boom_animation.run(this->renderer, elapsedTime, +1, this->position.as_int(), Vector2D<int>{10, 12}, camera_offset);
         }
     }
 
@@ -720,6 +718,8 @@ public:
     void handle_collision(CollisionType const& type, CollisionSide const& side) override {
         if (type == CollisionType::TILEMAP_COLLISION) {
             this->state = CannonBallState::exploding;
+            this->position.x -= 5;
+            this->position.y -= 5;
         }
     }
 
@@ -747,7 +747,6 @@ public:
     SDL_Texture* boom_spritesheet;
 };
 
-/*
 class PigWithMatches : public IGameCharacter {
 public:
     static auto constexpr IDLE_ANIMATION = 0;
@@ -755,23 +754,17 @@ public:
     static auto constexpr PREPARE_NEXT_MATCH = 2;
     static auto constexpr MATCH_ON_HAND = 3;
 
-    static auto constexpr DEFAULT_THINK_TIMEOUT = 5000.0;
+    static auto constexpr DEFAULT_THINK_TIMEOUT = 500.0;
 
-    static auto constexpr collision_offset_x = 30.;
-    static auto constexpr collision_offset_y = 30.;
-    static auto constexpr collision_size_x = 18.;
-    static auto constexpr collision_size_y = 18.;
+    static auto constexpr collision_size = Vector2D<int>{18, 18};
 
     PigWithMatches(SDL_Renderer* renderer, double pos_x, double pos_y, int face, Cannon& cannon)
         : face(face)
-        , pos_x(pos_x)
-        , pos_y(pos_y)
-        , velocity_x(0.0)
-        , velocity_y(0.0)
+        , position{pos_x, pos_y}
+        , old_position{pos_x, pos_y}
+        , velocity{0.0, 0.0}
         , renderer(renderer)
         , spritesheet(load_media("assets/sprites/pig_with_match96x96.png", renderer))
-        , old_pos_x(pos_x)
-        , old_pos_y(pos_y)
         , think_timeout(PigWithMatches::DEFAULT_THINK_TIMEOUT)
         , start_attack(false)
         , preparing_next_match(false)
@@ -817,43 +810,29 @@ public:
 
     void set_position(double x, double y) override
     {
-        this->pos_x = x;
-        this->pos_y = y;
+        this->position.x = x;
+        this->position.y = y;
     }
 
     Vector2D<double> get_position() const override
     {
-        return {this->pos_x, this->pos_y};
-    }
-    
-    Vector2D<double> get_velocity() const override
-    {
-        return {this->velocity_x, this->velocity_y};
+        return this->position;
     }
     
     void set_velocity(double x, double y) override
     {
-        this->velocity_x = x;
-        this->velocity_y = y;
+        this->velocity.x = x;
+        this->velocity.y = y;
     }
 
+    Vector2D<double> get_velocity() const override
+    {
+        return this->velocity;
+    }
+    
     CollisionRegionInformation get_collision_region_information() const override
     {
-        return CollisionRegionInformation{
-            {
-                this->pos_x + this->collision_offset_x,
-                this->pos_y + this->collision_offset_y,
-                this->collision_size_x,
-                this->collision_size_y
-            },
-            {
-                this->old_pos_x + this->collision_offset_x,
-                this->old_pos_y + this->collision_offset_y,
-                this->collision_size_x,
-                this->collision_size_y
-            },
-            {this->collision_offset_x, this->collision_offset_y}
-        };
+        return CollisionRegionInformation(this->position, this->old_position, this->collision_size);
     }
     
     void handle_collision(CollisionType const& type, CollisionSide const& side) override {}
@@ -864,10 +843,8 @@ public:
         this->think(elapsedTime);
 
         // Position setup
-        this->old_pos_x = this->pos_x;
-        this->old_pos_y = this->pos_y;
-        this->pos_x += this->velocity_x * elapsedTime;
-        this->pos_y += this->velocity_y * elapsedTime;        
+        this->old_position = this->position;
+        this->position += this->velocity * elapsedTime;
     }
 
     void run_animation(double elapsedTime) override
@@ -881,7 +858,7 @@ public:
             }
             return IDLE_ANIMATION;
         })();
-//         this->animations.at(current_animation).run(this->renderer, elapsedTime, -this->face, this->pos_x, this->pos_y);
+        this->animations.at(current_animation).run(this->renderer, elapsedTime, -this->face, this->position.as_int(), Vector2D<int>{39, 32}, camera_offset);
     }
 
 private:
@@ -900,20 +877,16 @@ private:
 public:
     std::map<int, Animation> animations;
     int face;
-    double pos_x;
-    double pos_y;
-    double velocity_x;
-    double velocity_y;
+    Vector2D<double> position;
+    Vector2D<double> old_position;
+    Vector2D<double> velocity;
     SDL_Renderer* renderer;
     SDL_Texture* spritesheet;
-    double old_pos_x;
-    double old_pos_y;
     double think_timeout;
     bool start_attack;
     bool preparing_next_match;
     Cannon& cannon;
 };
-*/
 
 class King : public IGameCharacter {
 public:
@@ -1320,7 +1293,6 @@ void pig_king_collision(Pig* pig_ptr, King* king)
     }
 }
 
-/*
 void cannon_king_collision(Cannon* cannon_ptr, King* king)
 {
     auto& player = *king;
@@ -1379,7 +1351,6 @@ void cannonball_pig_collision(CannonBall* cannon_ptr, Pig* pig_ptr)
         }
     }
 }
-*/
 
 void compute_characters_collisions(std::vector<IGameCharacter*>& game_characters)
 {
@@ -1390,14 +1361,14 @@ void compute_characters_collisions(std::vector<IGameCharacter*>& game_characters
             else if (dynamic_cast<Pig*>(game_characters[i]) && dynamic_cast<King*>(game_characters[j])) { pig_king_collision(dynamic_cast<Pig*>(game_characters[i]), dynamic_cast<King*>(game_characters[j])); }
             else if (dynamic_cast<Pig*>(game_characters[j]) && dynamic_cast<King*>(game_characters[i])) { pig_king_collision(dynamic_cast<Pig*>(game_characters[j]), dynamic_cast<King*>(game_characters[i])); }
 
-            // else if (dynamic_cast<Cannon*>(game_characters[i]) && dynamic_cast<King*>(game_characters[j])) { cannon_king_collision(dynamic_cast<Cannon*>(game_characters[i]), dynamic_cast<King*>(game_characters[j])); }
-            // else if (dynamic_cast<Cannon*>(game_characters[j]) && dynamic_cast<King*>(game_characters[i])) { cannon_king_collision(dynamic_cast<Cannon*>(game_characters[j]), dynamic_cast<King*>(game_characters[i])); }
+            else if (dynamic_cast<Cannon*>(game_characters[i]) && dynamic_cast<King*>(game_characters[j])) { cannon_king_collision(dynamic_cast<Cannon*>(game_characters[i]), dynamic_cast<King*>(game_characters[j])); }
+            else if (dynamic_cast<Cannon*>(game_characters[j]) && dynamic_cast<King*>(game_characters[i])) { cannon_king_collision(dynamic_cast<Cannon*>(game_characters[j]), dynamic_cast<King*>(game_characters[i])); }
 
-            // else if (dynamic_cast<CannonBall*>(game_characters[i]) && dynamic_cast<King*>(game_characters[j])) { cannonball_king_collision(dynamic_cast<CannonBall*>(game_characters[i]), dynamic_cast<King*>(game_characters[j])); }
-            // else if (dynamic_cast<CannonBall*>(game_characters[j]) && dynamic_cast<King*>(game_characters[i])) { cannonball_king_collision(dynamic_cast<CannonBall*>(game_characters[j]), dynamic_cast<King*>(game_characters[i])); }
+            else if (dynamic_cast<CannonBall*>(game_characters[i]) && dynamic_cast<King*>(game_characters[j])) { cannonball_king_collision(dynamic_cast<CannonBall*>(game_characters[i]), dynamic_cast<King*>(game_characters[j])); }
+            else if (dynamic_cast<CannonBall*>(game_characters[j]) && dynamic_cast<King*>(game_characters[i])) { cannonball_king_collision(dynamic_cast<CannonBall*>(game_characters[j]), dynamic_cast<King*>(game_characters[i])); }
 
-            // else if (dynamic_cast<CannonBall*>(game_characters[i]) && dynamic_cast<Pig*>(game_characters[j])) { cannonball_pig_collision(dynamic_cast<CannonBall*>(game_characters[i]), dynamic_cast<Pig*>(game_characters[j])); }
-            // else if (dynamic_cast<CannonBall*>(game_characters[j]) && dynamic_cast<Pig*>(game_characters[i])) { cannonball_pig_collision(dynamic_cast<CannonBall*>(game_characters[j]), dynamic_cast<Pig*>(game_characters[i])); }
+            else if (dynamic_cast<CannonBall*>(game_characters[i]) && dynamic_cast<Pig*>(game_characters[j])) { cannonball_pig_collision(dynamic_cast<CannonBall*>(game_characters[i]), dynamic_cast<Pig*>(game_characters[j])); }
+            else if (dynamic_cast<CannonBall*>(game_characters[j]) && dynamic_cast<Pig*>(game_characters[i])) { cannonball_pig_collision(dynamic_cast<CannonBall*>(game_characters[j]), dynamic_cast<Pig*>(game_characters[i])); }
         }
     }
 }
@@ -1506,7 +1477,7 @@ int main(int argc, char* args[])
         };
     }
 
-    auto cannon = Cannon(renderer, 80.0, 64.0, -1);
+    auto cannon = Cannon(renderer, 120.0, 64.0, -1);
     game_characters.push_back(&cannon);
     cannon.set_on_before_fire([&game_characters, &renderer, &cannon]() {
         auto cannon_position = cannon.get_position();
@@ -1514,8 +1485,8 @@ int main(int argc, char* args[])
         ball->set_velocity(+0.4, 0.0);
         game_characters.push_back(ball);
     });
-//     auto pig_with_match = PigWithMatches(renderer, 56., 64., +1, cannon);
-//     game_characters.push_back(&pig_with_match);
+    auto pig_with_match = PigWithMatches(renderer, 100., 64., +1, cannon);
+    game_characters.push_back(&pig_with_match);
 
     auto last = (unsigned long long)(0);
     auto current = SDL_GetPerformanceCounter();
@@ -1690,24 +1661,6 @@ int main(int argc, char* args[])
                 SDL_RenderFillRect(renderer, &collision_rect);
             }
 
-//             for (auto* c : game_characters) {
-//                 auto const& collision_region = c->get_collision_region_information().collision_region;
-//                 auto const& collision_size = c->get_collision_region_information().collision_region_offset;
-//                 auto camera_position = to_camera_position(
-//                     Vector2D<int>{int(collision_region.x), int(collision_region.y)},
-//                     Vector2D<int>{0, 0}
-//                 );
-//                 auto collision_rect = to_sdl_rect(Region2D<int>{camera_position.x, camera_position.y, collision_region.w, collision_region.h});
-//                 SDL_RenderFillRect(renderer, &collision_rect);
-//             }
-//             auto player_attack_region = player.attack_region();
-//             auto player_attack_position = to_camera_position(
-//                 Vector2D<int>{int(player_attack_region.x), int(player_attack_region.y)},
-//                 Vector2D<int>{0, 0}
-//             );
-//             auto player_attack_rect = to_sdl_rect(Region2D<int>{player_attack_position.x, player_attack_position.y, player_attack_region.w, player_attack_region.h});
-//             SDL_RenderFillRect(renderer, &player_attack_rect);
-// 
             debug_text(debug_messages, renderer, default_font, 10, 10);
             SDL_SetRenderDrawColor(renderer, r, g, b, a);
         }
