@@ -2,7 +2,8 @@
 #define __GAME_CHARACTER_INTERFACE_HPP
 
 #include <Vector2D.hpp>
-#include <CollisionRegion.hpp>
+#include <collision/CollisionRegion.hpp>
+#include <collision/enums.hpp>
 
 class IGameCharacter
 {
