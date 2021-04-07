@@ -333,7 +333,7 @@ int main(int argc, char* args[])
         int mousey = 0;
         SDL_GetMouseState(&mousex, &mousey);
         debug_messages.push_back("Mouse (Camera ): " + std::to_string(mousex) + ", " + std::to_string(mousey));
-        Vector2D world_mouse = to_world_position(Vector2D<int>{mousex, mousey}, Vector2D<int>{0, 0}, camera_offset);
+        auto world_mouse = to_world_position(Vector2D<int>{mousex, mousey}, Vector2D<int>{0, 0}, camera_offset);
         debug_messages.push_back("Mouse (World): " + std::to_string(int(world_mouse.x)) + ", " + std::to_string(int(world_mouse.y)));
         if (show_debug) {
             auto r = (Uint8)(0);

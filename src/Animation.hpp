@@ -15,21 +15,9 @@
 class Animation
 {
 public:
-    Animation(
-        SDL_Texture* spritesheet,
-        std::vector<std::tuple<int, int>> const& frames,
-        int framesize_x,
-        int framesize_y,
-        double animation_time
-    )
-        : spritesheet(spritesheet)
-        , frames(frames)
-        , state(0)
-        , framesize_x(framesize_x)
-        , framesize_y(framesize_y)
-        , animation_time(animation_time)
-    {
-    }
+	Animation(SDL_Texture *spritesheet,
+			const std::vector<std::tuple<int, int> > &frames, int framesize_x,
+			int framesize_y, double animation_time);
     
     void set_on_finish_animation_callback(std::function<void()> const& f)
     {
@@ -67,7 +55,7 @@ public:
         draw_sprite(renderer, this->spritesheet, offset, draw_position, size, camera_offset, flip);
     }
 
-// private:
+public:
     SDL_Texture* spritesheet;
     std::vector<std::tuple<int, int>> frames;
     double counter;

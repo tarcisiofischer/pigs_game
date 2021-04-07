@@ -39,7 +39,6 @@ public:
 
 public:
     King(SDL_Renderer* renderer, double pos_x, double pos_y);
-    
     void set_position(double x, double y) override;
     Vector2D<double> get_position() const override;
     Vector2D<double> get_velocity() const override;

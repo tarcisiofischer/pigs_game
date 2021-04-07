@@ -4,8 +4,7 @@ find_package(SDL2_ttf REQUIRED)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-add_executable(
-    PigsGame
+set(SOURCE_FILES
     main.cc
 
     bitmap_font.hpp
@@ -19,7 +18,9 @@ add_executable(
     characters/CannonBall.hpp
     characters/King.cpp
     characters/King.hpp
+    characters/Pig.cpp
     characters/Pig.hpp
+    characters/PigWithMatches.cpp
     characters/PigWithMatches.hpp
 
     collision/aabb.hpp
@@ -29,6 +30,7 @@ add_executable(
     collision/enums.hpp
     collision/tilemap_collision.hpp
 
+    Animation.cpp
     Animation.hpp
     bitmap_font.hpp
     constants.hpp
@@ -36,9 +38,22 @@ add_executable(
     random.hpp
     sdl_wrappers.cpp
     sdl_wrappers.hpp
+    StateTimeout.cpp
     StateTimeout.hpp
+    TransitionAnimation.cpp
     TransitionAnimation.hpp
     Vector2D.hpp
+)
+
+source_group(
+    TREE "${CMAKE_CURRENT_SOURCE_DIR}"
+    PREFIX "Source Files"
+    FILES ${SOURCE_FILES}
+)
+
+add_executable(
+    PigsGame
+    ${SOURCE_FILES}
 )
 
 include_directories(${SDL2_INCLUDE_DIRS} ${SDL2_IMAGE_INCLUDE_DIRS} ${SDL2TTF_INCLUDE_DIRS})
