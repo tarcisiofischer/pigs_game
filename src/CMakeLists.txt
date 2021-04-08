@@ -29,6 +29,7 @@ set(SOURCE_FILES
     collision/common.hpp
     collision/enums.hpp
     collision/tilemap_collision.hpp
+    collision/tilemap_collision.cpp
 
     Animation.cpp
     Animation.hpp
