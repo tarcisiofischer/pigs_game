@@ -35,7 +35,7 @@
 
 std::vector<std::string> debug_messages;
 
-// TODO: Initialize the camera on main (avoid global)
+// TODO PIG-12: Initialize the camera on main (avoid global)
 Vector2D<int> camera_offset{0, 0};
 
 int main(int argc, char* args[])
@@ -129,7 +129,7 @@ int main(int argc, char* args[])
     auto game_characters = std::vector<IGameCharacter*>();
     auto player = King(renderer, 100.0, 100.0);
 
-    // TODO: Continue dialog message
+    // TODO PIG-10: Continue dialog message
     /*
     player.on_after_run_animation_callbacks.push_back([&monogram](SDL_Renderer* renderer, IGameCharacter* player, double elapsedTime)
     {
@@ -168,7 +168,7 @@ int main(int argc, char* args[])
         auto *pig = new Pig(renderer, pos_x, pos_y);
         game_characters.push_back(pig);
 
-        // TODO: Move this to somewhere else
+        // TODO PIG-13: Move this to somewhere else
         pig->on_start_taking_damage = [&window_is_shaking, &window_shaker]() {
             window_is_shaking = true;
             window_shaker.restart();
@@ -266,7 +266,7 @@ int main(int argc, char* args[])
         int shake_x = window_is_shaking ? random_int(-3, 3) : 0;
         int shake_y = window_is_shaking ? random_int(-1, 1) : 0;
         window_shaker.update(elapsedTime);
-        // TODO: Only draw what's in the screen
+        // TODO PIG-11: Only draw what's in the screen
         for (int i = 0; i < HEIGHT; ++i) {
             for (int j = 0; j < WIDTH; ++j) {
                 // Background
@@ -328,7 +328,7 @@ int main(int argc, char* args[])
         for (auto& game_character : game_characters) {
             game_character->run_animation(elapsedTime);
         }
-        // TODO: Move this to somewhere else; Should only exist when transition is active.
+        // TODO PIG-13: Move this to somewhere else; Should only exist when transition is active.
         transition_animation.run(renderer, elapsedTime);
         
         int mousex = 0;

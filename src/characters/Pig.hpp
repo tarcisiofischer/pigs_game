@@ -9,7 +9,7 @@
 #include <random.hpp>
 #include <sdl_wrappers.hpp>
 
-// TODO: Remove this
+// TODO PIG-12: Remove this
 extern Vector2D<int> camera_offset;
 
 class Pig : public IGameCharacter {
