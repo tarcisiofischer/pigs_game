@@ -236,7 +236,7 @@ int main(int argc, char* args[])
                 }
             }
         }
-                        
+
         auto keystates = SDL_GetKeyboardState(NULL);
         player.handle_controller(keystates);
         for (auto* c : game_characters) {
@@ -266,6 +266,7 @@ int main(int argc, char* args[])
         int shake_x = window_is_shaking ? random_int(-3, 3) : 0;
         int shake_y = window_is_shaking ? random_int(-1, 1) : 0;
         window_shaker.update(elapsedTime);
+        // TODO: Only draw what's in the screen
         for (int i = 0; i < HEIGHT; ++i) {
             for (int j = 0; j < WIDTH; ++j) {
                 // Background
@@ -296,37 +297,38 @@ int main(int argc, char* args[])
                     auto size = Vector2D<int>{TILE_SIZE, TILE_SIZE};
                     draw_sprite(renderer, foreground_set, offset, world_position, size, camera_offset);
                 }
+            }
+        }
 
-                // Interactibles
-                {
-                    auto offset = Vector2D<int>{0, 0};
-                    auto world_position = Vector2D<int>{128 + shake_x, 192 + shake_y};
-                    auto size = Vector2D<int>{46, 56};
-                    draw_sprite(renderer, door, offset, world_position, size, camera_offset);
-                }
-                
-                // HUD
-                {
-                    {
-                        auto offset = Vector2D<int>{0, 0};
-                        auto size = Vector2D<int>{66, 34};
-                        auto static_camera_position = Vector2D<int>{10, SCREEN_HEIGHT / SCALE_SIZE - size.y - 10};
-                        draw_static_sprite(renderer, lifebar, offset, static_camera_position, size);
-                    }
+        // Interactibles
+        {
+            auto offset = Vector2D<int>{0, 0};
+            auto world_position = Vector2D<int>{128 + shake_x, 192 + shake_y};
+            auto size = Vector2D<int>{46, 56};
+            draw_sprite(renderer, door, offset, world_position, size, camera_offset);
+        }
+        
+        // HUD
+        {
+            {
+                auto offset = Vector2D<int>{0, 0};
+                auto size = Vector2D<int>{66, 34};
+                auto static_camera_position = Vector2D<int>{10, SCREEN_HEIGHT / SCALE_SIZE - size.y - 10};
+                draw_static_sprite(renderer, lifebar, offset, static_camera_position, size);
+            }
 
-                    auto offset = Vector2D<int>{0, 0};
-                    auto size = Vector2D<int>{18, 14};
-                    for (int i = 0; i < player.life; ++i) {
-                        auto camera_position = Vector2D<int>{21 + 11 * i, SCREEN_HEIGHT / SCALE_SIZE - size.y - 20};
-                        draw_static_sprite(renderer, lifebar_heart, offset, camera_position, size);
-                    }
-                }
+            auto offset = Vector2D<int>{0, 0};
+            auto size = Vector2D<int>{18, 14};
+            for (int i = 0; i < player.life; ++i) {
+                auto camera_position = Vector2D<int>{21 + 11 * i, SCREEN_HEIGHT / SCALE_SIZE - size.y - 20};
+                draw_static_sprite(renderer, lifebar_heart, offset, camera_position, size);
             }
         }
 
         for (auto& game_character : game_characters) {
             game_character->run_animation(elapsedTime);
         }
+        // TODO: Move this to somewhere else; Should only exist when transition is active.
         transition_animation.run(renderer, elapsedTime);
         
         int mousex = 0;
