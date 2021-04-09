@@ -2,7 +2,9 @@
 #define __COLLISION_ENUMS_HPP
 
 enum class CollisionType {
-    TILEMAP_COLLISION = 0
+    NO_COLLISION = 0,
+    TILEMAP_COLLISION = 1,
+    FOREGROUND_COLLISION = 2
 };
 
 enum class CollisionSide {

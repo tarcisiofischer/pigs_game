@@ -165,12 +165,15 @@ CollisionRegionInformation King::get_collision_region_information() const
 
 void King::handle_collision(const CollisionType& type, const CollisionSide& side)
 {
-    if (type == CollisionType::TILEMAP_COLLISION) {
-        if (side == CollisionSide::TOP_COLLISION) {
-            this->set_velocity(0.0, +0.01); // Force response
-        } else if (side == CollisionSide::BOTTOM_COLLISION) {
-            this->is_grounded = true;
-        }
+    if (type == CollisionType::TILEMAP_COLLISION && side == CollisionSide::TOP_COLLISION) {
+        this->set_velocity(0.0, +0.01); // Force response
+    }
+
+    if (
+        (type == CollisionType::TILEMAP_COLLISION || type == CollisionType::FOREGROUND_COLLISION)
+        && side == CollisionSide::BOTTOM_COLLISION
+    ) {
+        this->is_grounded = true;
     }
 }
 
