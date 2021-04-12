@@ -23,6 +23,13 @@ struct GameMap {
     int height;
     std::vector<std::vector<int>> tilemap;
     std::vector<std::vector<int>> foreground;
+
+    GameMap(int width, int height)
+        : width(width)
+        , height(height)
+        , tilemap{std::vector<std::vector<int>>(height, std::vector<int>(width))}
+        , foreground{std::vector<std::vector<int>>(height, std::vector<int>(width))}
+    {}
 };
 
 void save_map(GameMap const& map, std::string const& filename)
@@ -214,24 +221,54 @@ struct Options {
     bool open_file;
 };
 
-// Options handle_args(int argc, char* argv[])
-// {
+Options handle_args(int argc, char* argv[])
+{
+    Options options{
+        "output.map",
+        true,
+        20,
+        20,
+        false
+    };
 
-//     return {
-//         filenane,
-//         new_file,
-//         width,
-//         height,
-//         open_file
-//     }
-// }
+    for (int i = 1; i < argc; ++i) {
+        auto raw_arg = std::string(argv[i]);
+
+        if (raw_arg == "--new-file") {
+            options.new_file = true;
+            i++;
+            options.filename = std::string(argv[i]);
+        } else if (raw_arg == "--width") {
+            i++;
+            options.width = std::atoi(argv[i]);
+        } else if (raw_arg == "--height") {
+            i++;
+            options.height = std::atoi(argv[i]);
+        } else if (raw_arg == "--open-file") {
+            options.open_file = true;
+            i++;
+            options.filename = std::string(argv[i]);
+        } else {
+            std::cout << "Unknown option: " << raw_arg << std::endl;
+            std::cout << "Valid options:" << std::endl;
+            std::cout << "  --new-file <filename>" << std::endl;
+            std::cout << "  --width <value>" << std::endl;
+            std::cout << "  --height <value>" << std::endl;
+            std::cout << "  --open-file <filename>" << std::endl;
+        }
+    }
+
+    return options;
+}
 
 int main(int argc, char* argv[])
 {
-    // auto options =  handle_args(argc, argv);
+    auto options =  handle_args(argc, argv);
 
-    auto filename = "output.map";
-    auto map = load_map(filename);
+    std::cout << "Filename: " << options.filename;
+    std::cout << (options.new_file ? "(New file)" : "(loading existing file)") << std::endl;
+
+    auto map = (options.open_file) ? load_map(options.filename) : GameMap(options.width, options.height);
 
     initialize_sdl();
 
@@ -403,8 +440,8 @@ int main(int argc, char* argv[])
                     SDL_RenderFillRect(renderer, &fixed_rect);
 
                     if (is_just_clicked) {
-                        save_map(map, filename);
-                        std::cout << "Map saved in " << filename << std::endl;
+                        save_map(map, options.filename);
+                        std::cout << "Map saved in " << options.filename << std::endl;
                     }
                 }
             }
@@ -432,6 +469,44 @@ int main(int argc, char* argv[])
                             selected_section = BACKGROUND_SECTION;
                         }
                         selected_tile = -1;
+                    }
+                }
+            }
+
+            // "Fill" button
+            {
+                auto fill_btn_region = Region2D<int>{70, 5, 20, 20};
+
+                SDL_SetRenderDrawColor(renderer, 150, 0, 0, 255);
+                auto fixed_rect = to_sdl_rect(fill_btn_region);
+                SDL_RenderFillRect(renderer, &fixed_rect);
+
+                auto mouse_is_over = check_aabb_collision(
+                    fill_btn_region.as<double>(),
+                    Region2D<int>{mouse.x, mouse.y, 0, 0}.as<double>()
+                );
+                if (mouse_is_over) {
+                    SDL_SetRenderDrawColor(renderer, 250, 0, 0, 255);
+                    SDL_RenderFillRect(renderer, &fixed_rect);
+
+                    if (is_just_clicked) {
+                        if (selected_section == BACKGROUND_SECTION) {
+                            if (selected_tile != -1) {
+                                for (int i = 0; i < map.height; ++i) {
+                                    for (int j = 0; j < map.width; ++j) {
+                                        map.tilemap[i][j] = selected_tile;
+                                    }
+                                }
+                            }
+                        } else if (selected_section == FOREGROUND_SECTION) {
+                            if (selected_tile != -1) {
+                                for (int i = 0; i < map.height; ++i) {
+                                    for (int j = 0; j < map.width; ++j) {
+                                        map.foreground[i][j] = selected_tile;
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
