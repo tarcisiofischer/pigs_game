@@ -1,5 +1,7 @@
 #include <sdl_wrappers.hpp>
 
+#include <iostream>
+
 SDL_Texture* load_media(std::string const& filename, SDL_Renderer* renderer)
 {
     auto* surface = IMG_Load(filename.c_str());
@@ -12,4 +14,14 @@ SDL_Texture* load_media(std::string const& filename, SDL_Renderer* renderer)
     }
     SDL_FreeSurface(surface);
     return texture;
+}
+
+void initialize_sdl()
+{
+    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+        throw std::runtime_error("SDL could not initialize!");
+    }
+    if (TTF_Init() != 0) {
+        throw std::runtime_error("FAILED to initialize TTF library");
+    }
 }

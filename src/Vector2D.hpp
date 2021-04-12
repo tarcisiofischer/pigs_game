@@ -48,6 +48,12 @@ struct Region2D {
     T y;
     T w;
     T h;
+
+    template<typename H>
+    Region2D<H> as()
+    {
+        return Region2D<H>{H(this->x), H(this->y), H(this->w), H(this->h)};
+    }
 };
 
 struct RGBColor {

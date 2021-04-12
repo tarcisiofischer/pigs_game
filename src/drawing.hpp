@@ -40,6 +40,14 @@ void draw_static_sprite(
     SDL_RendererFlip const& flip=SDL_FLIP_NONE
 );
 
+void draw_direct_sprite(
+    SDL_Renderer* renderer,
+    SDL_Texture* spritesheet,
+    Vector2D<int> const& sprite_offset,
+    Vector2D<int> const& sdlwindow_position,
+    Vector2D<int> const& size
+);
+
 void gout(
     SDL_Renderer* renderer,
     SDL_Texture* spritesheet,

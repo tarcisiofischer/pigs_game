@@ -35,6 +35,7 @@ set(SOURCE_FILES
     Animation.hpp
     bitmap_font.hpp
     constants.hpp
+    drawing.cpp
     drawing.hpp
     random.hpp
     sdl_wrappers.cpp
@@ -57,5 +58,20 @@ add_executable(
     ${SOURCE_FILES}
 )
 
+add_executable(
+    MapEditor
+
+    map_editor.cpp
+    constants.hpp
+    drawing.cpp
+    drawing.hpp
+    sdl_wrappers.cpp
+    sdl_wrappers.hpp
+
+    collision/aabb.hpp
+)
+target_compile_definitions(MapEditor PRIVATE FORCE_SCALE_SIZE=1)
+
 include_directories(${SDL2_INCLUDE_DIRS} ${SDL2_IMAGE_INCLUDE_DIRS} ${SDL2TTF_INCLUDE_DIRS})
 target_link_libraries(PigsGame ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBRARIES} ${SDL2TTF_LIBRARIES})
+target_link_libraries(MapEditor ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBRARIES} ${SDL2TTF_LIBRARIES})

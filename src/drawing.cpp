@@ -39,6 +39,7 @@ void draw_sprite(
     SDL_RenderCopyEx(renderer, spritesheet, &srcrect, &dstrect, 0.0, nullptr, flip);
 }
 
+// Rething about this. Perhaps solve in PIG-12
 void draw_static_sprite(
     SDL_Renderer* renderer,
     SDL_Texture* spritesheet,
@@ -51,6 +52,18 @@ void draw_static_sprite(
     auto camera_position = to_camera_position(static_camera_position, size, {0, 0});
     auto dstrect = SDL_Rect{camera_position.x, camera_position.y, SCALE_SIZE * size.x, SCALE_SIZE * size.y};
     SDL_RenderCopyEx(renderer, spritesheet, &srcrect, &dstrect, 0.0, nullptr, flip);
+}
+
+void draw_direct_sprite(
+    SDL_Renderer* renderer,
+    SDL_Texture* spritesheet,
+    Vector2D<int> const& sprite_offset,
+    Vector2D<int> const& sdlwindow_position,
+    Vector2D<int> const& size
+) {
+    auto srcrect = SDL_Rect{sprite_offset.x, sprite_offset.y, size.x, size.y};
+    auto dstrect = SDL_Rect{sdlwindow_position.x, sdlwindow_position.y, SCALE_SIZE * size.x, SCALE_SIZE * size.y};
+    SDL_RenderCopy(renderer, spritesheet, &srcrect, &dstrect);
 }
 
 void gout(

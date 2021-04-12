@@ -33,64 +33,69 @@
 #include <sdl_wrappers.hpp>
 #include <random.hpp>
 
+#include <string>
+#include <iostream>
+#include <sstream>
+#include <fstream>
+
 std::vector<std::string> debug_messages;
 
 // TODO PIG-12: Initialize the camera on main (avoid global)
 Vector2D<int> camera_offset{0, 0};
+
+// TODO: Move this away
+struct GameMap {
+    int width;
+    int height;
+    std::vector<std::vector<int>> tilemap;
+    std::vector<std::vector<int>> foreground;
+};
+GameMap load_map(std::string const& filename)
+{
+    std::ifstream mapfile(filename, std::ios::binary | std::ios::in);
+    if (!mapfile.is_open()) {
+        throw std::runtime_error("Could not open file to read");
+    }
+
+    auto bin_read_nextint = [&mapfile](int &target) {
+        mapfile.read(reinterpret_cast<char*>(&target), sizeof(int));
+    };
+
+    auto map = GameMap{0, 0};
+
+    bin_read_nextint(map.width);
+    bin_read_nextint(map.height);
+
+    map.tilemap = std::vector<std::vector<int>>(map.height, std::vector<int>(map.width));
+    for (int i = 0; i < map.height; ++i) {
+        for (int j = 0; j < map.width; ++j) {
+            bin_read_nextint(map.tilemap[i][j]);
+        }
+    }
+
+    map.foreground = std::vector<std::vector<int>>(map.height, std::vector<int>(map.width));
+    for (int i = 0; i < map.height; ++i) {
+        for (int j = 0; j < map.width; ++j) {
+            bin_read_nextint(map.foreground[i][j]);
+        }
+    }
+    mapfile.close();
+
+    return map;
+}
 
 int main(int argc, char* args[])
 {
     SDL_Window* window = nullptr;
     bool quit = false;
     SDL_Event e;
-    
-    auto tilemap = std::array<std::array<int, WIDTH>, HEIGHT>{{
-        {13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13},
-        {13, 19, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 18, 25, 25, 25, 25, 25,  5, 13},
-        {13, 14, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 15, 13, 13, 13, 13, 13, 12, 13},
-        {13, 14, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 15, 13, 13, 13, 13, 13, 12, 13},
-        {13, 14, 39, 39, 39, 61, 61, 61, 61, 61, 39, 39, 39, 39, 39, 39, 39, 15, 39, 39, 39, 13, 13, 12, 13},
-        {13, 14, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 15, 13, 13, 13, 13, 13, 12, 13},
-        {13, 14, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 27, 13, 13, 13, 39, 39, 12, 13},
-        {13, 14, 61, 61, 61, 61, 61, 61, 61, 39, 61, 61, 61, 61, 61, 61, 61, 13, 13, 13, 13, 13, 13, 12, 13},
-        {13, 14, 61, 61, 61, 61, 61, 61, 61, 61, 39, 61, 61, 61, 61, 61, 61, 13, 13, 13, 13, 13, 13, 12, 13},
-        {13, 14, 61, 61, 61, 61, 61, 61, 61, 61, 61, 39, 61, 61, 61, 61, 61,  3, 39, 39, 39, 13, 39, 12, 13},
-        {13, 14, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 39, 61, 61, 61, 61, 15, 13, 13, 13, 13, 13, 12, 13},
-        {13, 14, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 39, 15, 13, 13, 13, 13, 13, 12, 13},
-        {13, 19, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 38, 61, 61, 61, 39, 15, 13, 13, 13, 39, 13, 12, 13},
-        {13, 14, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 39, 39, 15, 13, 13, 13, 13, 13, 12, 13},
-        {13, 14, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 39, 39, 39, 15, 13, 39, 13, 13, 13, 12, 13},
-        {13, 14, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 61, 39, 39, 39, 39, 15, 13, 13, 13, 13, 13, 12, 13},
-        {13, 16,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  7,  1,  1,  1,  1,  1, 17, 13},
-        {13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13},
-    }};
-    auto foreground = std::array<std::array<int, WIDTH>, HEIGHT>{{
-        { 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0},
-        { 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0},
-        { 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0},
-        { 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0},
-        { 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0},
-        { 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0},
-        { 0,  0,  0,  9, 10, 10, 11,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0},
-        { 0,  0,  0,  0,  5,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0},
-        { 0,  0,  0,  0,  0,  5,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0},
-        { 0,  0,  0,  2,  3,  3,  4,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0},
-        { 0,  0,  0,  2,  4,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  5,  0,  0,  0},
-        { 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0},
-        { 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0},
-        { 0,  0,  0, 16, 17, 18, 19,  0, 16, 17, 18, 19,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0},
-        { 0,  0,  0, 23, 24, 25, 26,  0, 23, 24, 25, 26,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0},
-        { 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0},
-        { 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0},
-        { 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0},
-    }};
 
-    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-        throw std::runtime_error("SDL could not initialize!");
-    }
-    if (TTF_Init() != 0) {
-        throw std::runtime_error("FAILED to initialize TTF library");
-    }
+    auto map = load_map("output.map");
+
+    auto tilemap = map.tilemap;
+    auto foreground = map.foreground;
+
+    initialize_sdl();
     auto* default_font = TTF_OpenFont("./FreeMono.ttf", 12);
     if (default_font == nullptr) {
         throw std::runtime_error("Unable to create default TTF font.");
@@ -330,7 +335,7 @@ int main(int argc, char* args[])
         }
         // TODO PIG-13: Move this to somewhere else; Should only exist when transition is active.
         transition_animation.run(renderer, elapsedTime);
-        
+
         int mousex = 0;
         int mousey = 0;
         SDL_GetMouseState(&mousex, &mousey);
