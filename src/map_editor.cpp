@@ -15,8 +15,8 @@
 
 #include <vector>
 
-// TODO PIG-12: Initialize the camera on main (avoid global)
-Vector2D<int> camera_offset{0, 0};
+auto constexpr BACKGROUND_SECTION = 1;
+auto constexpr FOREGROUND_SECTION = 2;
 
 struct GameMap {
     int width;
@@ -261,106 +261,126 @@ Options handle_args(int argc, char* argv[])
     return options;
 }
 
-int main(int argc, char* argv[])
+struct MouseState 
 {
-    auto options =  handle_args(argc, argv);
+    Vector2D<int> position;
+    bool just_left_clicked;
+    bool left_clicked;
+};
 
-    std::cout << "Filename: " << options.filename;
-    std::cout << (options.new_file ? "(New file)" : "(loading existing file)") << std::endl;
+class MapEditorWindow
+{
+public:
+    MapEditorWindow(GameMap const& map, std::string const& map_filename)
+        : camera_offset{0, 0}
+        , map(map)
+        , quit(false)
+        , selected_section(BACKGROUND_SECTION)
+        , selected_tile(-1)
+        , map_filename(map_filename)
+    {
+        initialize_sdl();
 
-    auto map = (options.open_file) ? load_map(options.filename) : GameMap(options.width, options.height);
+        this->sdl_window = SDL_CreateWindow(
+            "Pigs game - Map editor",
+            SDL_WINDOWPOS_UNDEFINED,
+            SDL_WINDOWPOS_UNDEFINED,
+            1024,
+            768,
+            SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE
+        );
+        if (this->sdl_window == nullptr) {
+            throw std::runtime_error("SDL Error: Window could not be created");
+        }
 
-    initialize_sdl();
+        this->sdl_renderer = SDL_CreateRenderer(this->sdl_window, -1, SDL_RENDERER_ACCELERATED);
+        SDL_SetRenderDrawBlendMode(this->sdl_renderer, SDL_BLENDMODE_BLEND);
 
-    auto window = SDL_CreateWindow(
-        "Pigs game - Map editor",
-        SDL_WINDOWPOS_UNDEFINED,
-        SDL_WINDOWPOS_UNDEFINED,
-        1024,
-        768,
-        SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE
-    );
-    if (window == nullptr) {
-        throw std::runtime_error("SDL Error: Window could not be created");
+        this->camera_offset.x = -int(this->map.width * TILE_SIZE / 2 - 200);
+        this->camera_offset.y = int(this->map.height * TILE_SIZE / 2);
+
+        auto load_spritesheet = [this](std::string const& filename) {
+            return load_media("assets/sprites/" + filename, this->sdl_renderer);
+        };
+        this->tileset = load_spritesheet("tileset.png");
+        this->foreground_set = load_spritesheet("foreground_set.png");
     }
 
-    auto renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+    ~MapEditorWindow()
+    {
+        SDL_DestroyWindow(this->sdl_window);
+        SDL_DestroyRenderer(this->sdl_renderer);
+        SDL_Quit();
+    }
 
-    auto load_spritesheet = [&renderer](std::string const& filename) {
-        return load_media("assets/sprites/" + filename, renderer);
-    };
-    auto tileset = load_spritesheet("tileset.png");
-    auto foreground_set = load_spritesheet("foreground_set.png");
+    void run()
+    {
+        while (!this->quit) {
+            this->handle_mouse_events();
+            this->update_screen();
+        }
+    }
 
-    camera_offset.x = -int(map.width * TILE_SIZE / 2 - 200);
-    camera_offset.y = int(map.height * TILE_SIZE / 2);
+private:
+    bool check_mouse_is_over(Region2D<int> region)
+    {
+        return check_aabb_collision(
+            region.as<double>(),
+            Region2D<int>{this->mouse.position.x, this->mouse.position.y, 0, 0}.as<double>()
+        );
+    }
 
-    auto mouse = Vector2D<int>{0, 0};
-
-    auto quit = false;
-    SDL_Event e;
-
-    auto constexpr BACKGROUND_SECTION = 1;
-    auto constexpr FOREGROUND_SECTION = 2;
-
-    auto is_clicked = false;
-    auto is_just_clicked = false;
-    int selected_tile = -1;
-    int selected_section = BACKGROUND_SECTION;
-
-    while (!quit) {
-        is_just_clicked = false;
+    void handle_mouse_events()
+    {
+        SDL_Event e;
+        this->mouse.just_left_clicked = false;
         while (SDL_PollEvent(&e) != 0) {
             switch (e.type) {
                 case SDL_QUIT: {
-                quit = true;
-                break;
+                    this->quit = true;
+                    break;
                 }
 
                 case SDL_MOUSEMOTION: {
                     if (e.motion.state & SDL_BUTTON_RMASK) {
-                        camera_offset.x -= e.motion.xrel;
-                        camera_offset.y += e.motion.yrel;
+                        this->camera_offset.x -= e.motion.xrel;
+                        this->camera_offset.y += e.motion.yrel;
                     }
-                    mouse.x = e.motion.x;
-                    mouse.y = e.motion.y;
+                    this->mouse.position.x = e.motion.x;
+                    this->mouse.position.y = e.motion.y;
                     break;
                 }
 
                 case SDL_MOUSEBUTTONDOWN: {
-                    is_just_clicked = true;
-                    is_clicked = true;
+                    this->mouse.just_left_clicked = true;
+                    this->mouse.left_clicked = true;
                     break;
                 }
 
                 case SDL_MOUSEBUTTONUP: {
-                    is_clicked = false;
-                    is_just_clicked = false;
+                    this->mouse.just_left_clicked = false;
+                    this->mouse.left_clicked = false;
                     break;
                 }
             }
         }
+    }
 
-        SDL_SetRenderDrawColor(renderer, 63, 56, 81, 255);
-        SDL_RenderClear(renderer);
+    void update_screen()
+    {
+        SDL_SetRenderDrawColor(this->sdl_renderer, 63, 56, 81, 255);
+        SDL_RenderClear(this->sdl_renderer);
 
         for (int i = 0; i < map.height; ++i) {
             for (int j = 0; j < map.width; ++j) {
                 auto world_position = Vector2D<int>{TILE_SIZE * j, TILE_SIZE * (map.height - i - 1)};
-                auto camera_position = to_camera_position(world_position, {TILE_SIZE, TILE_SIZE}, camera_offset);
-                auto tile_region = Region2D<int>{camera_position.x, camera_position.y, TILE_SIZE, TILE_SIZE};
-                auto mouse_is_over = check_aabb_collision(
-                    tile_region.as<double>(),
-                    Region2D<int>{mouse.x, mouse.y, 0, 0}.as<double>()
-                );
 
                 // Background
                 {
                     auto tile_id = map.tilemap[i][j];
                     auto offset = Vector2D<int>{TILE_SIZE * (tile_id % 12), TILE_SIZE * int(floor(tile_id / 12))};
                     auto size = Vector2D<int>{TILE_SIZE, TILE_SIZE};
-                    draw_sprite(renderer, tileset, offset, world_position, size, camera_offset);
+                    draw_sprite(this->sdl_renderer, this->tileset, offset, world_position, size, camera_offset);
                 }
 
                 // Foreground
@@ -368,21 +388,23 @@ int main(int argc, char* argv[])
                     auto tile_id = map.foreground[i][j];
                     auto offset = Vector2D<int>{TILE_SIZE * (tile_id % 7), TILE_SIZE * int(floor(tile_id / 7))};
                     auto size = Vector2D<int>{TILE_SIZE, TILE_SIZE};
-                    draw_sprite(renderer, foreground_set, offset, world_position, size, camera_offset);
+                    draw_sprite(this->sdl_renderer, this->foreground_set, offset, world_position, size, camera_offset);
                 }
 
                 // Check if selected
                 {
-                    if (mouse_is_over) {
-                        SDL_SetRenderDrawColor(renderer, 250, 255, 255, 255);
+                    auto camera_position = to_camera_position(world_position, {TILE_SIZE, TILE_SIZE}, camera_offset);
+                    auto tile_region = Region2D<int>{camera_position.x, camera_position.y, TILE_SIZE, TILE_SIZE};
+                    if (this->check_mouse_is_over(tile_region)) {
+                        SDL_SetRenderDrawColor(this->sdl_renderer, 250, 255, 255, 255);
                         auto sdl_rect = to_sdl_rect(tile_region);
-                        SDL_RenderDrawRect(renderer, &sdl_rect);
+                        SDL_RenderDrawRect(this->sdl_renderer, &sdl_rect);
 
-                        if (is_clicked && selected_tile != -1) {
+                        if (this->mouse.left_clicked && this->selected_tile != -1) {
                             if (selected_section == BACKGROUND_SECTION) {
-                                map.tilemap[i][j] = selected_tile;
+                                this->map.tilemap[i][j] = this->selected_tile;
                             } else if (selected_section == FOREGROUND_SECTION) {
-                                map.foreground[i][j] = selected_tile;
+                                this->map.foreground[i][j] = this->selected_tile;
                             }
                         }
                     }
@@ -392,56 +414,52 @@ int main(int argc, char* argv[])
 
         // Selected tile (mouse icon)
         {
-            auto world_mouse = to_world_position(mouse, {0, 0}, camera_offset);
+            auto world_mouse = to_world_position(this->mouse.position, {0, 0}, camera_offset);
             world_mouse.x -= TILE_SIZE / 2;
             world_mouse.y -= TILE_SIZE / 2;
             auto size = Vector2D<int>{TILE_SIZE, TILE_SIZE};
             if (selected_section == BACKGROUND_SECTION) {
                 auto offset = Vector2D<int>{TILE_SIZE * (selected_tile % 12), TILE_SIZE * int(floor(selected_tile / 12))};
-                draw_sprite(renderer, tileset, offset, world_mouse, size, camera_offset);
+                draw_sprite(this->sdl_renderer, tileset, offset, world_mouse, size, camera_offset);
             } else if (selected_section == FOREGROUND_SECTION) {
                 auto offset = Vector2D<int>{TILE_SIZE * (selected_tile % 7), TILE_SIZE * int(floor(selected_tile / 7))};
-                draw_sprite(renderer, foreground_set, offset, world_mouse, size, camera_offset);
+                draw_sprite(this->sdl_renderer, foreground_set, offset, world_mouse, size, camera_offset);
             }
         }
 
         // Drawable region border
         {
-            SDL_SetRenderDrawColor(renderer, 250, 200, 150, 255);
+            SDL_SetRenderDrawColor(this->sdl_renderer, 250, 200, 150, 255);
             auto map_size = Vector2D<int>{TILE_SIZE * map.width, TILE_SIZE * map.height};
             auto map_position = to_camera_position({0, 0}, map_size, camera_offset);
             auto map_rect = SDL_Rect{map_position.x, map_position.y, map_size.x, map_size.y};
-            SDL_RenderDrawRect(renderer, &map_rect);
+            SDL_RenderDrawRect(this->sdl_renderer, &map_rect);
         }
 
         // Left panel
         {
             int window_w = 0;
             int window_h = 0;
-            SDL_GetWindowSize(window, &window_w, &window_h);
-            SDL_SetRenderDrawColor(renderer, 45, 35, 60, 255);
+            SDL_GetWindowSize(this->sdl_window, &window_w, &window_h);
+            SDL_SetRenderDrawColor(this->sdl_renderer, 45, 35, 60, 255);
             auto fixed_rect = SDL_Rect{0, 0, 200, window_h};
-            SDL_RenderFillRect(renderer, &fixed_rect);
+            SDL_RenderFillRect(this->sdl_renderer, &fixed_rect);
 
             // Save button
             {
                 auto save_btn_region = Region2D<int>{20, 5, 20, 20};
 
-                SDL_SetRenderDrawColor(renderer, 0, 150, 0, 255);
+                SDL_SetRenderDrawColor(this->sdl_renderer, 0, 150, 0, 255);
                 auto fixed_rect = to_sdl_rect(save_btn_region);
-                SDL_RenderFillRect(renderer, &fixed_rect);
+                SDL_RenderFillRect(this->sdl_renderer, &fixed_rect);
 
-                auto mouse_is_over = check_aabb_collision(
-                    save_btn_region.as<double>(),
-                    Region2D<int>{mouse.x, mouse.y, 0, 0}.as<double>()
-                );
-                if (mouse_is_over) {
-                    SDL_SetRenderDrawColor(renderer, 0, 250, 0, 255);
-                    SDL_RenderFillRect(renderer, &fixed_rect);
+                if (this->check_mouse_is_over(save_btn_region)) {
+                    SDL_SetRenderDrawColor(this->sdl_renderer, 0, 250, 0, 255);
+                    SDL_RenderFillRect(this->sdl_renderer, &fixed_rect);
 
-                    if (is_just_clicked) {
-                        save_map(map, options.filename);
-                        std::cout << "Map saved in " << options.filename << std::endl;
+                    if (this->mouse.just_left_clicked) {
+                        save_map(map, this->map_filename);
+                        std::cout << "Map saved in " << this->map_filename << std::endl;
                     }
                 }
             }
@@ -450,25 +468,21 @@ int main(int argc, char* argv[])
             {
                 auto change_tile_btn_region = Region2D<int>{45, 5, 20, 20};
 
-                SDL_SetRenderDrawColor(renderer, 0, 0, 150, 255);
+                SDL_SetRenderDrawColor(this->sdl_renderer, 0, 0, 150, 255);
                 auto fixed_rect = to_sdl_rect(change_tile_btn_region);
-                SDL_RenderFillRect(renderer, &fixed_rect);
+                SDL_RenderFillRect(this->sdl_renderer, &fixed_rect);
 
-                auto mouse_is_over = check_aabb_collision(
-                    change_tile_btn_region.as<double>(),
-                    Region2D<int>{mouse.x, mouse.y, 0, 0}.as<double>()
-                );
-                if (mouse_is_over) {
-                    SDL_SetRenderDrawColor(renderer, 0, 0, 250, 255);
-                    SDL_RenderFillRect(renderer, &fixed_rect);
+                if (this->check_mouse_is_over(change_tile_btn_region)) {
+                    SDL_SetRenderDrawColor(this->sdl_renderer, 0, 0, 250, 255);
+                    SDL_RenderFillRect(this->sdl_renderer, &fixed_rect);
 
-                    if (is_just_clicked) {
-                        if (selected_section == BACKGROUND_SECTION) {
-                            selected_section = FOREGROUND_SECTION;
-                        } else if (selected_section == FOREGROUND_SECTION) {
-                            selected_section = BACKGROUND_SECTION;
+                    if (this->mouse.just_left_clicked) {
+                        if (this->selected_section == BACKGROUND_SECTION) {
+                            this->selected_section = FOREGROUND_SECTION;
+                        } else if (this->selected_section == FOREGROUND_SECTION) {
+                            this->selected_section = BACKGROUND_SECTION;
                         }
-                        selected_tile = -1;
+                        this->selected_tile = -1;
                     }
                 }
             }
@@ -477,19 +491,15 @@ int main(int argc, char* argv[])
             {
                 auto fill_btn_region = Region2D<int>{70, 5, 20, 20};
 
-                SDL_SetRenderDrawColor(renderer, 150, 0, 0, 255);
+                SDL_SetRenderDrawColor(this->sdl_renderer, 150, 0, 0, 255);
                 auto fixed_rect = to_sdl_rect(fill_btn_region);
-                SDL_RenderFillRect(renderer, &fixed_rect);
+                SDL_RenderFillRect(this->sdl_renderer, &fixed_rect);
 
-                auto mouse_is_over = check_aabb_collision(
-                    fill_btn_region.as<double>(),
-                    Region2D<int>{mouse.x, mouse.y, 0, 0}.as<double>()
-                );
-                if (mouse_is_over) {
-                    SDL_SetRenderDrawColor(renderer, 250, 0, 0, 255);
-                    SDL_RenderFillRect(renderer, &fixed_rect);
+                if (this->check_mouse_is_over(fill_btn_region)) {
+                    SDL_SetRenderDrawColor(this->sdl_renderer, 250, 0, 0, 255);
+                    SDL_RenderFillRect(this->sdl_renderer, &fixed_rect);
 
-                    if (is_just_clicked) {
+                    if (this->mouse.just_left_clicked) {
                         if (selected_section == BACKGROUND_SECTION) {
                             if (selected_tile != -1) {
                                 for (int i = 0; i < map.height; ++i) {
@@ -515,18 +525,18 @@ int main(int argc, char* argv[])
             {
                 if (selected_section == BACKGROUND_SECTION) {
                     draw_background_tileset(
-                        renderer,
+                        this->sdl_renderer,
                         tileset,
-                        is_clicked,
-                        mouse,
+                        this->mouse.left_clicked,
+                        this->mouse.position,
                         selected_tile
                     );
                 } else if (selected_section == FOREGROUND_SECTION) {
                     draw_foreground_tileset(
-                        renderer,
+                        this->sdl_renderer,
                         foreground_set,
-                        is_clicked,
-                        mouse,
+                        this->mouse.left_clicked,
+                        this->mouse.position,
                         selected_tile
                     );
                 }
@@ -534,11 +544,31 @@ int main(int argc, char* argv[])
 
         }
 
-        SDL_RenderPresent(renderer);
+        SDL_RenderPresent(this->sdl_renderer);        
     }
 
-    SDL_DestroyWindow(window);
-    SDL_Quit();
+    SDL_Window* sdl_window;
+    SDL_Renderer* sdl_renderer;
+    Vector2D<int> camera_offset;
+    GameMap map;
+    MouseState mouse;
+    bool quit;
+    int selected_tile;
+    int selected_section;
+    SDL_Texture* tileset;
+    SDL_Texture* foreground_set;
+    std::string map_filename;
+};
+
+int main(int argc, char* argv[])
+{
+    auto options = handle_args(argc, argv);
+    std::cout << "Filename: " << options.filename;
+    std::cout << (options.new_file ? "(New file)" : "(loading existing file)") << std::endl;
+    auto map = (options.open_file) ? load_map(options.filename) : GameMap(options.width, options.height);
+
+    auto window = MapEditorWindow(map, options.filename);
+    window.run();
 
     return 0;
 }
