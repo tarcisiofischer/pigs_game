@@ -371,6 +371,15 @@ private:
         SDL_SetRenderDrawColor(this->sdl_renderer, 63, 56, 81, 255);
         SDL_RenderClear(this->sdl_renderer);
 
+        this->draw_main_region();
+        this->draw_mouse();
+        this->draw_left_panel();
+
+        SDL_RenderPresent(this->sdl_renderer);        
+    }
+
+    void draw_main_region()
+    {
         for (int i = 0; i < map.height; ++i) {
             for (int j = 0; j < map.width; ++j) {
                 auto world_position = Vector2D<int>{TILE_SIZE * j, TILE_SIZE * (map.height - i - 1)};
@@ -412,21 +421,6 @@ private:
             }
         }
 
-        // Selected tile (mouse icon)
-        {
-            auto world_mouse = to_world_position(this->mouse.position, {0, 0}, camera_offset);
-            world_mouse.x -= TILE_SIZE / 2;
-            world_mouse.y -= TILE_SIZE / 2;
-            auto size = Vector2D<int>{TILE_SIZE, TILE_SIZE};
-            if (selected_section == BACKGROUND_SECTION) {
-                auto offset = Vector2D<int>{TILE_SIZE * (selected_tile % 12), TILE_SIZE * int(floor(selected_tile / 12))};
-                draw_sprite(this->sdl_renderer, tileset, offset, world_mouse, size, camera_offset);
-            } else if (selected_section == FOREGROUND_SECTION) {
-                auto offset = Vector2D<int>{TILE_SIZE * (selected_tile % 7), TILE_SIZE * int(floor(selected_tile / 7))};
-                draw_sprite(this->sdl_renderer, foreground_set, offset, world_mouse, size, camera_offset);
-            }
-        }
-
         // Drawable region border
         {
             SDL_SetRenderDrawColor(this->sdl_renderer, 250, 200, 150, 255);
@@ -435,116 +429,128 @@ private:
             auto map_rect = SDL_Rect{map_position.x, map_position.y, map_size.x, map_size.y};
             SDL_RenderDrawRect(this->sdl_renderer, &map_rect);
         }
+    }
 
-        // Left panel
+    void draw_mouse()
+    {
+        auto world_mouse = to_world_position(this->mouse.position, {0, 0}, camera_offset);
+        world_mouse.x -= TILE_SIZE / 2;
+        world_mouse.y -= TILE_SIZE / 2;
+        auto size = Vector2D<int>{TILE_SIZE, TILE_SIZE};
+        if (selected_section == BACKGROUND_SECTION) {
+            auto offset = Vector2D<int>{TILE_SIZE * (selected_tile % 12), TILE_SIZE * int(floor(selected_tile / 12))};
+            draw_sprite(this->sdl_renderer, tileset, offset, world_mouse, size, camera_offset);
+        } else if (selected_section == FOREGROUND_SECTION) {
+            auto offset = Vector2D<int>{TILE_SIZE * (selected_tile % 7), TILE_SIZE * int(floor(selected_tile / 7))};
+            draw_sprite(this->sdl_renderer, foreground_set, offset, world_mouse, size, camera_offset);
+        }
+    }
+
+    void draw_left_panel()
+    {
+        int window_w = 0;
+        int window_h = 0;
+        SDL_GetWindowSize(this->sdl_window, &window_w, &window_h);
+        SDL_SetRenderDrawColor(this->sdl_renderer, 45, 35, 60, 255);
+        auto fixed_rect = SDL_Rect{0, 0, 200, window_h};
+        SDL_RenderFillRect(this->sdl_renderer, &fixed_rect);
+
+        // Save button
         {
-            int window_w = 0;
-            int window_h = 0;
-            SDL_GetWindowSize(this->sdl_window, &window_w, &window_h);
-            SDL_SetRenderDrawColor(this->sdl_renderer, 45, 35, 60, 255);
-            auto fixed_rect = SDL_Rect{0, 0, 200, window_h};
+            auto save_btn_region = Region2D<int>{20, 5, 20, 20};
+
+            SDL_SetRenderDrawColor(this->sdl_renderer, 0, 150, 0, 255);
+            auto fixed_rect = to_sdl_rect(save_btn_region);
             SDL_RenderFillRect(this->sdl_renderer, &fixed_rect);
 
-            // Save button
-            {
-                auto save_btn_region = Region2D<int>{20, 5, 20, 20};
-
-                SDL_SetRenderDrawColor(this->sdl_renderer, 0, 150, 0, 255);
-                auto fixed_rect = to_sdl_rect(save_btn_region);
+            if (this->check_mouse_is_over(save_btn_region)) {
+                SDL_SetRenderDrawColor(this->sdl_renderer, 0, 250, 0, 255);
                 SDL_RenderFillRect(this->sdl_renderer, &fixed_rect);
 
-                if (this->check_mouse_is_over(save_btn_region)) {
-                    SDL_SetRenderDrawColor(this->sdl_renderer, 0, 250, 0, 255);
-                    SDL_RenderFillRect(this->sdl_renderer, &fixed_rect);
-
-                    if (this->mouse.just_left_clicked) {
-                        save_map(map, this->map_filename);
-                        std::cout << "Map saved in " << this->map_filename << std::endl;
-                    }
+                if (this->mouse.just_left_clicked) {
+                    save_map(map, this->map_filename);
+                    std::cout << "Map saved in " << this->map_filename << std::endl;
                 }
             }
-
-            // "Change tileset" button
-            {
-                auto change_tile_btn_region = Region2D<int>{45, 5, 20, 20};
-
-                SDL_SetRenderDrawColor(this->sdl_renderer, 0, 0, 150, 255);
-                auto fixed_rect = to_sdl_rect(change_tile_btn_region);
-                SDL_RenderFillRect(this->sdl_renderer, &fixed_rect);
-
-                if (this->check_mouse_is_over(change_tile_btn_region)) {
-                    SDL_SetRenderDrawColor(this->sdl_renderer, 0, 0, 250, 255);
-                    SDL_RenderFillRect(this->sdl_renderer, &fixed_rect);
-
-                    if (this->mouse.just_left_clicked) {
-                        if (this->selected_section == BACKGROUND_SECTION) {
-                            this->selected_section = FOREGROUND_SECTION;
-                        } else if (this->selected_section == FOREGROUND_SECTION) {
-                            this->selected_section = BACKGROUND_SECTION;
-                        }
-                        this->selected_tile = -1;
-                    }
-                }
-            }
-
-            // "Fill" button
-            {
-                auto fill_btn_region = Region2D<int>{70, 5, 20, 20};
-
-                SDL_SetRenderDrawColor(this->sdl_renderer, 150, 0, 0, 255);
-                auto fixed_rect = to_sdl_rect(fill_btn_region);
-                SDL_RenderFillRect(this->sdl_renderer, &fixed_rect);
-
-                if (this->check_mouse_is_over(fill_btn_region)) {
-                    SDL_SetRenderDrawColor(this->sdl_renderer, 250, 0, 0, 255);
-                    SDL_RenderFillRect(this->sdl_renderer, &fixed_rect);
-
-                    if (this->mouse.just_left_clicked) {
-                        if (selected_section == BACKGROUND_SECTION) {
-                            if (selected_tile != -1) {
-                                for (int i = 0; i < map.height; ++i) {
-                                    for (int j = 0; j < map.width; ++j) {
-                                        map.tilemap[i][j] = selected_tile;
-                                    }
-                                }
-                            }
-                        } else if (selected_section == FOREGROUND_SECTION) {
-                            if (selected_tile != -1) {
-                                for (int i = 0; i < map.height; ++i) {
-                                    for (int j = 0; j < map.width; ++j) {
-                                        map.foreground[i][j] = selected_tile;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // TILES selection
-            {
-                if (selected_section == BACKGROUND_SECTION) {
-                    draw_background_tileset(
-                        this->sdl_renderer,
-                        tileset,
-                        this->mouse.left_clicked,
-                        this->mouse.position,
-                        selected_tile
-                    );
-                } else if (selected_section == FOREGROUND_SECTION) {
-                    draw_foreground_tileset(
-                        this->sdl_renderer,
-                        foreground_set,
-                        this->mouse.left_clicked,
-                        this->mouse.position,
-                        selected_tile
-                    );
-                }
-            }
-
         }
 
-        SDL_RenderPresent(this->sdl_renderer);        
+        // "Change tileset" button
+        {
+            auto change_tile_btn_region = Region2D<int>{45, 5, 20, 20};
+
+            SDL_SetRenderDrawColor(this->sdl_renderer, 0, 0, 150, 255);
+            auto fixed_rect = to_sdl_rect(change_tile_btn_region);
+            SDL_RenderFillRect(this->sdl_renderer, &fixed_rect);
+
+            if (this->check_mouse_is_over(change_tile_btn_region)) {
+                SDL_SetRenderDrawColor(this->sdl_renderer, 0, 0, 250, 255);
+                SDL_RenderFillRect(this->sdl_renderer, &fixed_rect);
+
+                if (this->mouse.just_left_clicked) {
+                    if (this->selected_section == BACKGROUND_SECTION) {
+                        this->selected_section = FOREGROUND_SECTION;
+                    } else if (this->selected_section == FOREGROUND_SECTION) {
+                        this->selected_section = BACKGROUND_SECTION;
+                    }
+                    this->selected_tile = -1;
+                }
+            }
+        }
+
+        // "Fill" button
+        {
+            auto fill_btn_region = Region2D<int>{70, 5, 20, 20};
+
+            SDL_SetRenderDrawColor(this->sdl_renderer, 150, 0, 0, 255);
+            auto fixed_rect = to_sdl_rect(fill_btn_region);
+            SDL_RenderFillRect(this->sdl_renderer, &fixed_rect);
+
+            if (this->check_mouse_is_over(fill_btn_region)) {
+                SDL_SetRenderDrawColor(this->sdl_renderer, 250, 0, 0, 255);
+                SDL_RenderFillRect(this->sdl_renderer, &fixed_rect);
+
+                if (this->mouse.just_left_clicked) {
+                    if (selected_section == BACKGROUND_SECTION) {
+                        if (selected_tile != -1) {
+                            for (int i = 0; i < map.height; ++i) {
+                                for (int j = 0; j < map.width; ++j) {
+                                    map.tilemap[i][j] = selected_tile;
+                                }
+                            }
+                        }
+                    } else if (selected_section == FOREGROUND_SECTION) {
+                        if (selected_tile != -1) {
+                            for (int i = 0; i < map.height; ++i) {
+                                for (int j = 0; j < map.width; ++j) {
+                                    map.foreground[i][j] = selected_tile;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // TILES selection
+        {
+            if (selected_section == BACKGROUND_SECTION) {
+                draw_background_tileset(
+                    this->sdl_renderer,
+                    tileset,
+                    this->mouse.left_clicked,
+                    this->mouse.position,
+                    selected_tile
+                );
+            } else if (selected_section == FOREGROUND_SECTION) {
+                draw_foreground_tileset(
+                    this->sdl_renderer,
+                    foreground_set,
+                    this->mouse.left_clicked,
+                    this->mouse.position,
+                    selected_tile
+                );
+            }
+        }
     }
 
     SDL_Window* sdl_window;
