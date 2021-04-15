@@ -66,6 +66,28 @@ void draw_direct_sprite(
     SDL_RenderCopy(renderer, spritesheet, &srcrect, &dstrect);
 }
 
+void draw_filled_region(
+    SDL_Renderer* renderer,
+    Region2D<int> const& region,
+    RGBColor const& fill_color
+)
+{
+    SDL_SetRenderDrawColor(renderer, fill_color.r, fill_color.g, fill_color.b, 255);
+    auto rect = to_sdl_rect(region);
+    SDL_RenderFillRect(renderer, &rect);
+}
+
+void draw_line(
+    SDL_Renderer* renderer,
+    Vector2D<int> const& start_position,
+    Vector2D<int> const& end_position,
+    RGBColor const& fill_color
+)
+{
+    SDL_SetRenderDrawColor(renderer, fill_color.r, fill_color.g, fill_color.b, 255);
+    SDL_RenderDrawLine(renderer, start_position.x, start_position.y, end_position.x, end_position.y);
+}
+
 void gout(
     SDL_Renderer* renderer,
     SDL_Texture* spritesheet,

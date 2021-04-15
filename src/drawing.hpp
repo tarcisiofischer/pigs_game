@@ -48,6 +48,19 @@ void draw_direct_sprite(
     Vector2D<int> const& size
 );
 
+void draw_filled_region(
+    SDL_Renderer* renderer,
+    Region2D<int> const& region,
+    RGBColor const& fill_color
+);
+
+void draw_line(
+    SDL_Renderer* renderer,
+    Vector2D<int> const& start_position,
+    Vector2D<int> const& end_position,
+    RGBColor const& fill_color
+);
+
 void gout(
     SDL_Renderer* renderer,
     SDL_Texture* spritesheet,
