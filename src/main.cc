@@ -44,18 +44,35 @@ std::vector<std::string> debug_messages;
 // TODO PIG-12: Initialize the camera on main (avoid global)
 Vector2D<int> camera_offset{0, 0};
 
+std::vector<IGameCharacter*> build_game_characters(SDL_Renderer* renderer, GameMap const& map)
+{
+    // TODO: Avoid raw pointers
+    auto game_characters = std::vector<IGameCharacter*>();
+    auto player = ([&map, &renderer](){
+        for (auto const& info : map.interactables) {
+            if (info.id == 0) {
+                return new King(renderer, info.position.x, info.position.y);
+            }
+        }
+        throw std::runtime_error("Player must be placed somewhere in the map!");
+    })();
+    game_characters.push_back(player);
+
+    for (auto const& info : map.interactables) {
+        if (info.id == 1) {
+            auto pig = new Pig(renderer, info.position.x, info.position.y);
+            game_characters.push_back(pig);
+        }
+    }
+
+    return game_characters;
+}
 
 int main(int argc, char* args[])
 {
     SDL_Window* window = nullptr;
     bool quit = false;
     SDL_Event e;
-
-    auto map = load_map("level2.map");
-
-    auto tilemap = map.tilemap;
-    auto foreground = map.foreground;
-    auto interactibles = map.interactables;
 
     initialize_sdl();
     auto* default_font = TTF_OpenFont("./FreeMono.ttf", 12);
@@ -71,7 +88,7 @@ int main(int argc, char* args[])
         SCREEN_HEIGHT,
         SDL_WINDOW_SHOWN
     );
-    if (window == NULL) {
+    if (window == nullptr) {
         throw std::runtime_error("SDL Error: Window could not be created");
     }
 
@@ -93,79 +110,13 @@ int main(int argc, char* args[])
     auto window_is_shaking = false;
     auto window_shaker = StateTimeout(300., [&window_is_shaking](){ window_is_shaking = false; });
 
-    auto game_characters = std::vector<IGameCharacter*>();
-    auto player = ([&interactibles, &renderer](){
-        for (auto const& interactible : interactibles) {
-            if (interactible.id == 0) {
-                return King(renderer, interactible.position.x, interactible.position.y);
-            }
-        }
-        throw std::runtime_error("Player must be placed somewhere in the map!");
-    })();
-    game_characters.push_back(&player);
+    auto map = load_map("level2.map");
+    auto const& tilemap = map.tilemap;
+    auto const& foreground = map.foreground;
+    auto const& interactibles = map.interactables;
 
-    for (auto const& interactible : interactibles) {
-        if (interactible.id == 1) {
-            auto pig = new Pig(renderer, interactible.position.x, interactible.position.y);
-            game_characters.push_back(pig);
-        }
-    }
-
-    // TODO PIG-10: Continue dialog message
-    /*
-    player.on_after_run_animation_callbacks.push_back([&monogram](SDL_Renderer* renderer, IGameCharacter* player, double elapsedTime)
-    {
-        SDL_SetRenderDrawColor(renderer, 230, 230, 230, 220);
-
-        auto player_world_position = player->get_position().as_int();
-        auto player_camera_position = to_camera_position(
-            player_world_position + Vector2D<int>{10, 40},
-            {0, 0},
-            camera_offset
-        );
-        // Talking area
-        auto message = std::string("Hello world!");
-        auto collision_rect = to_sdl_rect(Region2D<int>{
-            player_camera_position.x - 5,
-            player_camera_position.y - 5,
-            5 + int(message.size()) * 6 + 5,
-            5 + 6 * 1 + 5,
-        });
-        SDL_RenderFillRect(renderer, &collision_rect);
-        gout(
-            renderer,
-            monogram,
-            player_camera_position,
-            message,
-            RGBColor{218, 73, 73}
-        );
-    });
-    */
-
-    // int n_pigs = 0;
-    // for (int i = 0; i < n_pigs; ++i) {
-    //     auto pos_x = 300 + 5 * i;
-    //     auto pos_y = 422;
-    //     auto *pig = new Pig(renderer, pos_x, pos_y);
-    //     game_characters.push_back(pig);
-
-    //     // TODO PIG-13: Move this to somewhere else
-    //     pig->on_start_taking_damage = [&window_is_shaking, &window_shaker]() {
-    //         window_is_shaking = true;
-    //         window_shaker.restart();
-    //     };
-    // }
-
-    // auto cannon = Cannon(renderer, 120.0, 64.0, -1);
-    // game_characters.push_back(&cannon);
-    // cannon.set_on_before_fire([&game_characters, &renderer, &cannon]() {
-    //     auto cannon_position = cannon.get_position();
-    //     auto ball = new CannonBall(renderer, cannon_position.x + CannonBall::ball_exit_offset_x, cannon_position.y + CannonBall::ball_exit_offset_y);
-    //     ball->set_velocity(+0.4, 0.0);
-    //     game_characters.push_back(ball);
-    // });
-    // auto pig_with_match = PigWithMatches(renderer, 100., 64., +1, cannon);
-    // game_characters.push_back(&pig_with_match);
+    auto game_characters = build_game_characters(renderer, map);
+    auto& player = *(dynamic_cast<King*>(game_characters[0]));
 
     auto last = (unsigned long long)(0);
     auto current = SDL_GetPerformanceCounter();
@@ -181,13 +132,12 @@ int main(int argc, char* args[])
         window_is_shaking = true;
         window_shaker.restart();
     };
-    
     transition_animation.register_transition_callback([&player]() {
         player.set_position(100.0, 100.0);
         player.is_dead = false;
         player.life = 2;
     });
-    
+
     while (!quit) {
         last = current;
         current = SDL_GetPerformanceCounter();
@@ -217,9 +167,9 @@ int main(int argc, char* args[])
                 }
             }
         }
-
         auto keystates = SDL_GetKeyboardState(NULL);
         player.handle_controller(keystates);
+
         for (auto* c : game_characters) {
             c->update(elapsedTime);
         }
@@ -228,17 +178,6 @@ int main(int argc, char* args[])
             compute_tilemap_collisions(map, c);
         }
         compute_characters_collisions(game_characters);
-
-        game_characters.erase(
-            std::remove_if(game_characters.begin(), game_characters.end(), [](IGameCharacter* c) {
-                auto* pig = dynamic_cast<Pig*>(c);
-                if (pig != nullptr) {
-                return pig->is_dead;
-                }
-                return false;
-            }),
-            game_characters.end()
-        );
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
@@ -280,14 +219,6 @@ int main(int argc, char* args[])
                 }
             }
         }
-
-        // // Interactibles
-        // {
-        //     auto offset = Vector2D<int>{0, 0};
-        //     auto world_position = Vector2D<int>{128 + shake_x, 192 + shake_y};
-        //     auto size = Vector2D<int>{46, 56};
-        //     draw_sprite(renderer, door, offset, world_position, size, camera_offset);
-        // }
         
         // HUD
         {
@@ -325,12 +256,7 @@ int main(int argc, char* args[])
             auto a = (Uint8)(0);
             SDL_GetRenderDrawColor(renderer, &r, &g, &b, &a);
 
-            auto debug_area_rect = to_sdl_rect(Region2D<int>{
-                0,
-                0,
-                SCREEN_WIDTH,
-                80
-            });
+            auto debug_area_rect = to_sdl_rect(Region2D<int>{0, 0, SCREEN_WIDTH, 80});
 
             SDL_SetRenderDrawColor(renderer, 65, 60, 70, 220);
             SDL_RenderFillRect(renderer, &debug_area_rect);

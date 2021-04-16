@@ -122,6 +122,17 @@ void compute_characters_collisions(std::vector<IGameCharacter*>& game_characters
             else if (dynamic_cast<CannonBall*>(game_characters[j]) && dynamic_cast<Pig*>(game_characters[i])) { cannonball_pig_collision(dynamic_cast<CannonBall*>(game_characters[j]), dynamic_cast<Pig*>(game_characters[i])); }
         }
     }
+
+    game_characters.erase(
+        std::remove_if(game_characters.begin(), game_characters.end(), [](IGameCharacter* c) {
+            auto* pig = dynamic_cast<Pig*>(c);
+            if (pig != nullptr) {
+                return pig->is_dead;
+            }
+            return false;
+        }),
+        game_characters.end()
+    );
 }
 
 #endif
