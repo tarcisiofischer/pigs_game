@@ -363,12 +363,17 @@ int main(int argc, char* args[])
         // Update camera
         {
             auto position = player.get_position().as_int();
+
             auto camera_min_x = 0;
-            auto camera_max_x = 200;
+            auto user_centered_camera_x = position.x - SCREEN_WIDTH / (2 * SCALE_SIZE);
+            auto camera_max_x = std::max(0, map.width * TILE_SIZE - SCREEN_WIDTH / 2);
+
             auto camera_min_y = 0;
-            auto camera_max_y = 220;
-            camera_offset.x = std::max(camera_min_x, std::min(position.x - SCREEN_WIDTH / (2 * SCALE_SIZE), camera_max_x));
-            camera_offset.y = std::max(camera_min_y, std::min(position.y - SCREEN_HEIGHT / (2 * SCALE_SIZE), camera_max_y));
+            auto user_centered_camera_y = position.y - SCREEN_HEIGHT / (2 * SCALE_SIZE);
+            auto camera_max_y = std::max(0, map.height * TILE_SIZE - SCREEN_HEIGHT / 2);
+
+            camera_offset.x = std::max(camera_min_x, std::min(user_centered_camera_x, camera_max_x));
+            camera_offset.y = std::max(camera_min_y, std::min(user_centered_camera_y, camera_max_y));
         }
 
         SDL_RenderPresent(renderer);
