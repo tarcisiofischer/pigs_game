@@ -48,15 +48,17 @@ std::vector<IGameCharacter*> build_game_characters(SDL_Renderer* renderer, GameM
 {
     // TODO: Avoid raw pointers
     auto game_characters = std::vector<IGameCharacter*>();
-    auto player = ([&map, &renderer](){
+    auto player = ([&map, &renderer]() -> IGameCharacter* {
         for (auto const& info : map.interactables) {
             if (info.id == 0) {
                 return new King(renderer, info.position.x, info.position.y);
             }
         }
-        throw std::runtime_error("Player must be placed somewhere in the map!");
+        return nullptr;
     })();
-    game_characters.push_back(player);
+    if (player) {
+        game_characters.push_back(player);
+    }
 
     for (auto const& info : map.interactables) {
         if (info.id == 1) {
@@ -67,6 +69,8 @@ std::vector<IGameCharacter*> build_game_characters(SDL_Renderer* renderer, GameM
 
     return game_characters;
 }
+
+auto constexpr ACTIVE_MAP = "intro.map";
 
 int main(int argc, char* args[])
 {
@@ -110,13 +114,13 @@ int main(int argc, char* args[])
     auto window_is_shaking = false;
     auto window_shaker = StateTimeout(300., [&window_is_shaking](){ window_is_shaking = false; });
 
-    auto map = load_map("level2.map");
+    auto map = load_map(ACTIVE_MAP);
     auto const& tilemap = map.tilemap;
     auto const& foreground = map.foreground;
     auto const& interactibles = map.interactables;
 
     auto game_characters = build_game_characters(renderer, map);
-    auto& player = *(dynamic_cast<King*>(game_characters[0]));
+    auto player = dynamic_cast<King*>(game_characters[0]);
 
     auto last = (unsigned long long)(0);
     auto current = SDL_GetPerformanceCounter();
@@ -125,18 +129,20 @@ int main(int argc, char* args[])
     auto fps = 0;
     
     auto transition_animation = TransitionAnimation();
-    player.register_on_dead_callback([&transition_animation]() {
-        transition_animation.reset();
-    });
-    player.on_start_taking_damage = [&window_is_shaking, &window_shaker]() {
-        window_is_shaking = true;
-        window_shaker.restart();
-    };
-    transition_animation.register_transition_callback([&player]() {
-        player.set_position(100.0, 100.0);
-        player.is_dead = false;
-        player.life = 2;
-    });
+    if (player) {
+        player->register_on_dead_callback([&transition_animation]() {
+            transition_animation.reset();
+        });
+        player->on_start_taking_damage = [&window_is_shaking, &window_shaker]() {
+            window_is_shaking = true;
+            window_shaker.restart();
+        };
+        transition_animation.register_transition_callback([&player]() {
+            player->set_position(100.0, 100.0);
+            player->is_dead = false;
+            player->life = 2;
+        });
+    }
 
     while (!quit) {
         last = current;
@@ -168,7 +174,9 @@ int main(int argc, char* args[])
             }
         }
         auto keystates = SDL_GetKeyboardState(NULL);
-        player.handle_controller(keystates);
+        if (player) {
+            player->handle_controller(keystates);
+        }
 
         for (auto* c : game_characters) {
             c->update(elapsedTime);
@@ -221,7 +229,7 @@ int main(int argc, char* args[])
         }
         
         // HUD
-        {
+        if (player) {
             {
                 auto offset = Vector2D<int>{0, 0};
                 auto size = Vector2D<int>{66, 34};
@@ -231,7 +239,7 @@ int main(int argc, char* args[])
 
             auto offset = Vector2D<int>{0, 0};
             auto size = Vector2D<int>{18, 14};
-            for (int i = 0; i < player.life; ++i) {
+            for (int i = 0; i < player->life; ++i) {
                 auto camera_position = Vector2D<int>{21 + 11 * i, SCREEN_HEIGHT / SCALE_SIZE - size.y - 20};
                 draw_static_sprite(renderer, lifebar_heart, offset, camera_position, size);
             }
@@ -288,7 +296,10 @@ int main(int argc, char* args[])
 
         // Update camera
         {
-            auto position = player.get_position().as_int();
+            auto position = Vector2D<int>{0, 0};
+            if (player) {
+                position = player->get_position().as_int();
+            }
 
             auto camera_min_x = 0;
             auto user_centered_camera_x = position.x - SCREEN_WIDTH / (2 * SCALE_SIZE);
