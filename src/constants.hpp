@@ -1,8 +1,6 @@
 #ifndef __CONSTANTS_HPP
 #define __CONSTANTS_HPP
 
-auto constexpr WIDTH = 25;
-auto constexpr HEIGHT = 18;
 #ifndef FORCE_SCALE_SIZE
 #define FORCE_SCALE_SIZE 2
 #endif

@@ -26,7 +26,6 @@ set(SOURCE_FILES
     collision/aabb.hpp
     collision/character_collision.hpp
     collision/CollisionRegion.hpp
-    collision/common.hpp
     collision/enums.hpp
     collision/tilemap_collision.hpp
     collision/tilemap_collision.cpp
@@ -37,6 +36,10 @@ set(SOURCE_FILES
     constants.hpp
     drawing.cpp
     drawing.hpp
+    GameMap.cpp
+    GameMap.hpp
+    io.cpp
+    io.hpp
     random.hpp
     sdl_wrappers.cpp
     sdl_wrappers.hpp
@@ -65,8 +68,12 @@ add_executable(
     constants.hpp
     drawing.cpp
     drawing.hpp
+    io.cpp
+    io.hpp
     sdl_wrappers.cpp
     sdl_wrappers.hpp
+    GameMap.cpp
+    GameMap.hpp
 
     collision/aabb.hpp
 )

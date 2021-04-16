@@ -3,9 +3,11 @@
 #include <SDL_ttf.h>
 
 #include <Vector2D.hpp>
+#include <GameMap.hpp>
 #include <sdl_wrappers.hpp>
 #include <constants.hpp>
 #include <drawing.hpp>
+#include <io.hpp>
 #include <collision/aabb.hpp>
 
 #include <string>
@@ -26,108 +28,6 @@ auto constexpr DARK_PURPLE_COLOR = RGBColor{45, 35, 60};
 auto constexpr PURPLE_COLOR = RGBColor{63, 56, 81};
 auto constexpr LIGHT_PURPLE_COLOR = RGBColor{90, 80, 100};
 auto constexpr LIGHT_YELLOW_COLOR = RGBColor{250, 200, 150};
-
-struct InteractableInfo {
-    Vector2D<int> position;
-    int id;
-    int flip;
-};
-
-struct GameMap {
-    int width;
-    int height;
-    std::vector<std::vector<int>> tilemap;
-    std::vector<std::vector<int>> foreground;
-    std::vector<InteractableInfo> interactables;
-
-    GameMap(int width, int height)
-        : width(width)
-        , height(height)
-        , tilemap{std::vector<std::vector<int>>(height, std::vector<int>(width))}
-        , foreground{std::vector<std::vector<int>>(height, std::vector<int>(width))}
-        , interactables{0}
-    {}
-};
-
-void save_map(GameMap const& map, std::string const& filename)
-{
-    std::ofstream mapfile(filename, std::ios::binary | std::ios::out);
-    if (!mapfile.is_open()) {
-        throw std::runtime_error("Could not open file to write");
-    }
-    auto bin_write = [&mapfile](int const& data) {
-        mapfile.write(reinterpret_cast<const char*>(&data), sizeof(int));
-    };
-
-    bin_write(map.width);
-    bin_write(map.height);
-    for (int i = 0; i < map.height; ++i) {
-        for (int j = 0; j < map.width; ++j) {
-            bin_write(map.tilemap[i][j]);
-        }
-    }
-    for (int i = 0; i < map.height; ++i) {
-        for (int j = 0; j < map.width; ++j) {
-            bin_write(map.foreground[i][j]);
-        }
-    }
-    bin_write(map.interactables.size());
-    for (auto const& interactable : map.interactables) {
-        bin_write(interactable.position.x);
-        bin_write(interactable.position.y);
-        bin_write(interactable.id);
-        bin_write(interactable.flip);
-    }
-    mapfile.close();
-}
-
-GameMap load_map(std::string const& filename)
-{
-    std::ifstream mapfile(filename, std::ios::binary | std::ios::in);
-    if (!mapfile.is_open()) {
-        throw std::runtime_error("Could not open file to read");
-    }
-
-    auto bin_read_nextint = [&mapfile](int &target) {
-        mapfile.read(reinterpret_cast<char*>(&target), sizeof(int));
-    };
-
-    auto map = GameMap{0, 0};
-
-    bin_read_nextint(map.width);
-    bin_read_nextint(map.height);
-
-    map.tilemap = std::vector<std::vector<int>>(map.height, std::vector<int>(map.width));
-    for (int i = 0; i < map.height; ++i) {
-        for (int j = 0; j < map.width; ++j) {
-            bin_read_nextint(map.tilemap[i][j]);
-        }
-    }
-
-    map.foreground = std::vector<std::vector<int>>(map.height, std::vector<int>(map.width));
-    for (int i = 0; i < map.height; ++i) {
-        for (int j = 0; j < map.width; ++j) {
-            bin_read_nextint(map.foreground[i][j]);
-        }
-    }
-
-    int size = 0;
-    bin_read_nextint(size);
-    int position_x = 0;
-    int position_y = 0;
-    int id = 0;
-    int flip = 0;
-    for (int i = 0; i < size; ++i) {
-        bin_read_nextint(position_x);
-        bin_read_nextint(position_y);
-        bin_read_nextint(id);
-        bin_read_nextint(flip);
-        map.interactables.push_back({{position_x, position_y}, id, flip});
-    }
-
-    mapfile.close();
-    return map;
-}
 
 struct Options {
     std::string filename;
@@ -183,7 +83,9 @@ struct MouseState
 {
     Vector2D<int> position;
     bool just_left_clicked;
+    bool just_right_clicked;
     bool left_clicked;
+    bool right_clicked;
 };
 
 bool check_mouse_is_over(MouseState const& mouse, Region2D<int> region)
@@ -285,6 +187,7 @@ public:
     MapEditorWindow(GameMap const& map, std::string const& map_filename)
         : camera_offset{0, 0}
         , map(map)
+        , mouse{{0, 0}, false, false, false}
         , quit(false)
         , selected_section(BACKGROUND_SECTION)
         , selected_tile(-1)
@@ -442,6 +345,7 @@ private:
     {
         SDL_Event e;
         this->mouse.just_left_clicked = false;
+        this->mouse.just_right_clicked = false;
         while (SDL_PollEvent(&e) != 0) {
             switch (e.type) {
                 case SDL_QUIT: {
@@ -460,14 +364,26 @@ private:
                 }
 
                 case SDL_MOUSEBUTTONDOWN: {
-                    this->mouse.just_left_clicked = true;
-                    this->mouse.left_clicked = true;
+                    if (e.button.button == SDL_BUTTON_LEFT) {
+                        this->mouse.just_left_clicked = true;
+                        this->mouse.left_clicked = true;
+                    }
+                    if (e.button.button == SDL_BUTTON_RIGHT) {
+                        this->mouse.right_clicked = true;
+                        this->mouse.just_right_clicked = true;
+                    }
                     break;
                 }
 
                 case SDL_MOUSEBUTTONUP: {
-                    this->mouse.just_left_clicked = false;
-                    this->mouse.left_clicked = false;
+                    if (e.button.button == SDL_BUTTON_LEFT) {
+                        this->mouse.just_left_clicked = false;
+                        this->mouse.left_clicked = false;
+                    }
+                    if (e.button.button == SDL_BUTTON_RIGHT) {
+                        this->mouse.right_clicked = false;
+                        this->mouse.just_right_clicked = false;
+                    }
                     break;
                 }
             }
@@ -509,6 +425,23 @@ private:
                     auto size = Vector2D<int>{TILE_SIZE, TILE_SIZE};
                     draw_sprite(this->sdl_renderer, this->foreground_set, offset, world_position, size, camera_offset);
                 }
+            }
+        }
+
+
+        // Interactables
+        {
+            auto size = Vector2D<int>{TILE_SIZE, TILE_SIZE};
+            for (auto const& interactable_info : this->map.interactables) {
+                auto offset = Vector2D<int>{TILE_SIZE * (interactable_info.id % 7), TILE_SIZE * int(floor(interactable_info.id / 7))};
+                auto world_position = interactable_info.position;
+                draw_sprite(this->sdl_renderer, this->interactables_set, offset, world_position, size, camera_offset);
+            }
+        }
+
+        for (int i = 0; i < map.height; ++i) {
+            for (int j = 0; j < map.width; ++j) {
+                auto world_position = Vector2D<int>{TILE_SIZE * j, TILE_SIZE * (map.height - i - 1)};
 
                 // Check if selected
                 {
@@ -524,9 +457,30 @@ private:
                                 this->map.tilemap[i][j] = this->selected_tile;
                             } else if (selected_section == FOREGROUND_SECTION) {
                                 this->map.foreground[i][j] = this->selected_tile;
-                            } else if (selected_section == INTERACTABLES_SECTION) {
+                            }
+                        }
+                        if (this->mouse.just_left_clicked && this->selected_tile != -1) {
+                            if (selected_section == INTERACTABLES_SECTION) {
                                 // TODO: check how to flip
-                                this->map.interactables.push_back({this->mouse.position, this->selected_tile, +1});
+                                this->map.interactables.push_back({world_position, this->selected_tile, +1});
+                            }
+                        }
+
+                        if (this->mouse.just_right_clicked) {
+                            if (selected_section == INTERACTABLES_SECTION) {
+                                this->map.interactables.erase(
+                                    std::remove_if(
+                                        this->map.interactables.begin(),
+                                        this->map.interactables.end(),
+                                        [&world_position](InteractableInfo const& interactable_info) {
+                                            return (
+                                                fabs(interactable_info.position.x - world_position.x) <= 1e-4 &&
+                                                fabs(interactable_info.position.y - world_position.y) <= 1e-4
+                                            );
+                                        }
+                                    ),
+                                    this->map.interactables.end()
+                                );
                             }
                         }
                     }

@@ -32,6 +32,7 @@
 #include <constants.hpp>
 #include <sdl_wrappers.hpp>
 #include <random.hpp>
+#include <io.hpp>
 
 #include <string>
 #include <iostream>
@@ -43,46 +44,6 @@ std::vector<std::string> debug_messages;
 // TODO PIG-12: Initialize the camera on main (avoid global)
 Vector2D<int> camera_offset{0, 0};
 
-// TODO: Move this away
-struct GameMap {
-    int width;
-    int height;
-    std::vector<std::vector<int>> tilemap;
-    std::vector<std::vector<int>> foreground;
-};
-GameMap load_map(std::string const& filename)
-{
-    std::ifstream mapfile(filename, std::ios::binary | std::ios::in);
-    if (!mapfile.is_open()) {
-        throw std::runtime_error("Could not open file to read");
-    }
-
-    auto bin_read_nextint = [&mapfile](int &target) {
-        mapfile.read(reinterpret_cast<char*>(&target), sizeof(int));
-    };
-
-    auto map = GameMap{0, 0};
-
-    bin_read_nextint(map.width);
-    bin_read_nextint(map.height);
-
-    map.tilemap = std::vector<std::vector<int>>(map.height, std::vector<int>(map.width));
-    for (int i = 0; i < map.height; ++i) {
-        for (int j = 0; j < map.width; ++j) {
-            bin_read_nextint(map.tilemap[i][j]);
-        }
-    }
-
-    map.foreground = std::vector<std::vector<int>>(map.height, std::vector<int>(map.width));
-    for (int i = 0; i < map.height; ++i) {
-        for (int j = 0; j < map.width; ++j) {
-            bin_read_nextint(map.foreground[i][j]);
-        }
-    }
-    mapfile.close();
-
-    return map;
-}
 
 int main(int argc, char* args[])
 {
@@ -90,10 +51,11 @@ int main(int argc, char* args[])
     bool quit = false;
     SDL_Event e;
 
-    auto map = load_map("output.map");
+    auto map = load_map("level2.map");
 
     auto tilemap = map.tilemap;
     auto foreground = map.foreground;
+    auto interactibles = map.interactables;
 
     initialize_sdl();
     auto* default_font = TTF_OpenFont("./FreeMono.ttf", 12);
@@ -132,7 +94,22 @@ int main(int argc, char* args[])
     auto window_shaker = StateTimeout(300., [&window_is_shaking](){ window_is_shaking = false; });
 
     auto game_characters = std::vector<IGameCharacter*>();
-    auto player = King(renderer, 100.0, 100.0);
+    auto player = ([&interactibles, &renderer](){
+        for (auto const& interactible : interactibles) {
+            if (interactible.id == 0) {
+                return King(renderer, interactible.position.x, interactible.position.y);
+            }
+        }
+        throw std::runtime_error("Player must be placed somewhere in the map!");
+    })();
+    game_characters.push_back(&player);
+
+    for (auto const& interactible : interactibles) {
+        if (interactible.id == 1) {
+            auto pig = new Pig(renderer, interactible.position.x, interactible.position.y);
+            game_characters.push_back(pig);
+        }
+    }
 
     // TODO PIG-10: Continue dialog message
     /*
@@ -165,31 +142,30 @@ int main(int argc, char* args[])
     });
     */
 
-    game_characters.push_back(&player);
-    int n_pigs = 10;
-    for (int i = 0; i < n_pigs; ++i) {
-        auto pos_x = 300 + 5 * i;
-        auto pos_y = 422;
-        auto *pig = new Pig(renderer, pos_x, pos_y);
-        game_characters.push_back(pig);
+    // int n_pigs = 0;
+    // for (int i = 0; i < n_pigs; ++i) {
+    //     auto pos_x = 300 + 5 * i;
+    //     auto pos_y = 422;
+    //     auto *pig = new Pig(renderer, pos_x, pos_y);
+    //     game_characters.push_back(pig);
 
-        // TODO PIG-13: Move this to somewhere else
-        pig->on_start_taking_damage = [&window_is_shaking, &window_shaker]() {
-            window_is_shaking = true;
-            window_shaker.restart();
-        };
-    }
+    //     // TODO PIG-13: Move this to somewhere else
+    //     pig->on_start_taking_damage = [&window_is_shaking, &window_shaker]() {
+    //         window_is_shaking = true;
+    //         window_shaker.restart();
+    //     };
+    // }
 
-    auto cannon = Cannon(renderer, 120.0, 64.0, -1);
-    game_characters.push_back(&cannon);
-    cannon.set_on_before_fire([&game_characters, &renderer, &cannon]() {
-        auto cannon_position = cannon.get_position();
-        auto ball = new CannonBall(renderer, cannon_position.x + CannonBall::ball_exit_offset_x, cannon_position.y + CannonBall::ball_exit_offset_y);
-        ball->set_velocity(+0.4, 0.0);
-        game_characters.push_back(ball);
-    });
-    auto pig_with_match = PigWithMatches(renderer, 100., 64., +1, cannon);
-    game_characters.push_back(&pig_with_match);
+    // auto cannon = Cannon(renderer, 120.0, 64.0, -1);
+    // game_characters.push_back(&cannon);
+    // cannon.set_on_before_fire([&game_characters, &renderer, &cannon]() {
+    //     auto cannon_position = cannon.get_position();
+    //     auto ball = new CannonBall(renderer, cannon_position.x + CannonBall::ball_exit_offset_x, cannon_position.y + CannonBall::ball_exit_offset_y);
+    //     ball->set_velocity(+0.4, 0.0);
+    //     game_characters.push_back(ball);
+    // });
+    // auto pig_with_match = PigWithMatches(renderer, 100., 64., +1, cannon);
+    // game_characters.push_back(&pig_with_match);
 
     auto last = (unsigned long long)(0);
     auto current = SDL_GetPerformanceCounter();
@@ -249,7 +225,7 @@ int main(int argc, char* args[])
         }
 
         for (auto* c : game_characters) {
-            compute_tilemap_collisions(tilemap, foreground, c);
+            compute_tilemap_collisions(map, c);
         }
         compute_characters_collisions(game_characters);
 
@@ -272,13 +248,13 @@ int main(int argc, char* args[])
         int shake_y = window_is_shaking ? random_int(-1, 1) : 0;
         window_shaker.update(elapsedTime);
         // TODO PIG-11: Only draw what's in the screen
-        for (int i = 0; i < HEIGHT; ++i) {
-            for (int j = 0; j < WIDTH; ++j) {
+        for (int i = 0; i < map.height; ++i) {
+            for (int j = 0; j < map.width; ++j) {
                 // Background
                 {
                     auto tile_id = tilemap[i][j];
                     auto offset = Vector2D<int>{TILE_SIZE * (tile_id % 12), TILE_SIZE * int(floor(tile_id / 12))};
-                    auto world_position = Vector2D<int>{TILE_SIZE * j + shake_x, TILE_SIZE * (HEIGHT - i - 1) + shake_y};
+                    auto world_position = Vector2D<int>{TILE_SIZE * j + shake_x, TILE_SIZE * (map.height - i - 1) + shake_y};
                     auto size = Vector2D<int>{TILE_SIZE, TILE_SIZE};
                     draw_sprite(renderer, tileset, offset, world_position, size, camera_offset);
 
@@ -298,20 +274,20 @@ int main(int argc, char* args[])
                 {
                     auto tile_id = foreground[i][j];
                     auto offset = Vector2D<int>{TILE_SIZE * (tile_id % 7), TILE_SIZE * int(floor(tile_id / 7))};
-                    auto world_position = Vector2D<int>{TILE_SIZE * j + shake_x, TILE_SIZE * (HEIGHT - i - 1) + shake_y};
+                    auto world_position = Vector2D<int>{TILE_SIZE * j + shake_x, TILE_SIZE * (map.height - i - 1) + shake_y};
                     auto size = Vector2D<int>{TILE_SIZE, TILE_SIZE};
                     draw_sprite(renderer, foreground_set, offset, world_position, size, camera_offset);
                 }
             }
         }
 
-        // Interactibles
-        {
-            auto offset = Vector2D<int>{0, 0};
-            auto world_position = Vector2D<int>{128 + shake_x, 192 + shake_y};
-            auto size = Vector2D<int>{46, 56};
-            draw_sprite(renderer, door, offset, world_position, size, camera_offset);
-        }
+        // // Interactibles
+        // {
+        //     auto offset = Vector2D<int>{0, 0};
+        //     auto world_position = Vector2D<int>{128 + shake_x, 192 + shake_y};
+        //     auto size = Vector2D<int>{46, 56};
+        //     draw_sprite(renderer, door, offset, world_position, size, camera_offset);
+        // }
         
         // HUD
         {
