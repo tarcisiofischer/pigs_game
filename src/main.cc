@@ -2,6 +2,7 @@
 #include <SDL_image.h>
 #include <SDL_ttf.h>
 
+#include <cstring>
 #include <algorithm>
 #include <iostream>
 #include <functional>
@@ -19,6 +20,8 @@
 #include <characters/PigWithMatches.hpp>
 #include <characters/King.hpp>
 
+#include <GameController.hpp>
+#include <SceneScript.hpp>
 #include <TransitionAnimation.hpp>
 #include <StateTimeout.hpp>
 #include <Animation.hpp>
@@ -72,6 +75,31 @@ std::vector<IGameCharacter*> build_game_characters(SDL_Renderer* renderer, GameM
 
 auto constexpr ACTIVE_MAP = "intro.map";
 
+void prepare_script(std::vector<IGameCharacter*> game_characters)
+{
+    auto pig1 = dynamic_cast<Pig*>(game_characters[0]);
+    auto pig2 = dynamic_cast<Pig*>(game_characters[1]);
+    auto pig3 = dynamic_cast<Pig*>(game_characters[2]);
+
+    pig1->set_script({{
+        {0, std::make_unique<WalkTo>(pig1, 130)},
+        {5, std::make_unique<FaceTo>(pig1, -1)},
+        {10, std::make_unique<Talk>(pig1, "Hey man")},
+    }});
+    pig2->set_script({{
+        {0, std::make_unique<WalkTo>(pig2, 100)},
+        {5, std::make_unique<FaceTo>(pig2, +1)},
+        {6, std::make_unique<WaitScriptEvent>(pig1, 2)},
+        {10, std::make_unique<Talk>(pig2, "Sup'")},
+    }});
+    pig3->set_script({{
+        {0, std::make_unique<WalkTo>(pig3, 80)},
+        {5, std::make_unique<FaceTo>(pig3, +1)},
+        {6, std::make_unique<WaitScriptEvent>(pig1, 2)},
+        {10, std::make_unique<Talk>(pig3, "Sup")},
+    }});
+}
+
 int main(int argc, char* args[])
 {
     SDL_Window* window = nullptr;
@@ -122,6 +150,8 @@ int main(int argc, char* args[])
     auto game_characters = build_game_characters(renderer, map);
     auto player = dynamic_cast<King*>(game_characters[0]);
 
+    prepare_script(game_characters);
+
     auto last = (unsigned long long)(0);
     auto current = SDL_GetPerformanceCounter();
     auto fps_countdown = 1000.;
@@ -162,8 +192,8 @@ int main(int argc, char* args[])
         while (SDL_PollEvent(&e) != 0) {
             switch (e.type) {
                 case SDL_QUIT: {
-                quit = true;
-                break;
+                    quit = true;
+                    break;
                 }
                 case SDL_KEYDOWN: {
                     if (e.key.keysym.sym == SDLK_TAB && !e.key.repeat) {
@@ -173,6 +203,7 @@ int main(int argc, char* args[])
                 }
             }
         }
+        game_controller.update();
         auto keystates = SDL_GetKeyboardState(NULL);
         if (player) {
             player->handle_controller(keystates);

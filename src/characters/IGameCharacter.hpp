@@ -17,6 +17,7 @@ public:
     virtual void handle_collision(CollisionType const& type, CollisionSide const& side) = 0;
     virtual CollisionRegionInformation get_collision_region_information() const = 0;
     virtual void on_after_collision() = 0;
+    // virtual int get_dynamic_property(int property_id) const = 0;
 };
 
 #endif

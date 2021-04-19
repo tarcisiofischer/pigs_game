@@ -36,6 +36,8 @@ set(SOURCE_FILES
     constants.hpp
     drawing.cpp
     drawing.hpp
+    GameController.cpp
+    GameController.hpp
     GameMap.cpp
     GameMap.hpp
     io.cpp
@@ -43,6 +45,8 @@ set(SOURCE_FILES
     random.hpp
     sdl_wrappers.cpp
     sdl_wrappers.hpp
+    SceneScript.cpp
+    SceneScript.hpp
     StateTimeout.cpp
     StateTimeout.hpp
     TransitionAnimation.cpp

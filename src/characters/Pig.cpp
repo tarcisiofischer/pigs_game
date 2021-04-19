@@ -1,5 +1,86 @@
 #include <characters/Pig.hpp>
 
+#include <iostream>
+
+Pig::Pig(SDL_Renderer* renderer, double pos_x, double pos_y)
+    : running_side(0)
+    , position{pos_x, pos_y}
+    , old_position{pos_x, pos_y}
+    , velocity{0.0, 0.0}
+    , renderer(renderer)
+    , spritesheet(load_media("assets/sprites/pig80x80.png", renderer))
+    , think_timeout(1000.)
+    , is_taking_damage(false)
+    , life(2)
+    , is_dying(false)
+    , is_dead(false)
+    , is_talking(false)
+    , talking_message("")
+{
+    auto register_animation = [&](int id, std::vector<std::tuple<int, int>> const& frames, double time) {
+        this->animations.insert(std::make_pair(id, Animation(this->spritesheet, frames, 80, 80, time)));
+    };
+    
+    register_animation(
+        Pig::IDLE_ANIMATION, 
+        {
+            {0, 1},
+            {1, 1},
+            {2, 1},
+            {3, 1},
+            {4, 1},
+        },
+        100.
+    );
+    register_animation(
+        Pig::RUNNING_ANIMATION,
+        {
+            {5, 1},
+            {0, 2},
+            {1, 2},
+            {2, 2},
+            {3, 2},
+            {4, 2},
+        },
+        100.
+    );
+    register_animation(
+        Pig::TAKING_DAMAGE_ANIMATION,
+        {
+            {1, 4},
+            {2, 4},
+            {1, 4},
+            {2, 4},
+        },
+        100.
+    );
+    register_animation(
+        Pig::DYING_ANIMATION,
+        {
+            {3, 4},
+            {4, 4},
+            {5, 4},
+            {0, 5},
+        },
+        100.
+    );
+    register_animation(
+        Pig::TALKING_ANIMATION,
+        {
+            {1, 5},
+            {2, 5},
+            {3, 5},
+            {4, 5},
+            {5, 5},
+            {0, 6},
+            {1, 6},
+        },
+        100.
+    );
+
+    this->connect_callbacks();
+}
+
 Pig::Pig(Pig const& other)
 {
     this->running_side = other.running_side;
@@ -27,6 +108,11 @@ void Pig::set_position(double x, double y)
 {
     this->position.x = x;
     this->position.y = y;
+}
+
+void Pig::set_script(SceneScript&& s)
+{
+    this->script = std::move(s);
 }
 
 Vector2D<double> Pig::get_position() const
@@ -83,7 +169,7 @@ void Pig::start_taking_damage()
     }
 }
 
-void Pig::run_animation(double elapsedTime)
+void Pig::run_animation(double elapsed_time)
 {
     auto current_animation = ([this]() {
         if (this->is_dying) {
@@ -95,40 +181,111 @@ void Pig::run_animation(double elapsedTime)
         if (this->running_side != 0) {
             return RUNNING_ANIMATION;
         }
+        if (this->is_talking) {
+            return TALKING_ANIMATION;
+        }
         return IDLE_ANIMATION;
     })();
     this->animations.at(current_animation).run(
         this->renderer,
-        elapsedTime,
+        elapsed_time,
         -this->face,
         Vector2D<int>{int(this->position.x), int(this->position.y)},
         this->spritesheet_offset,
         camera_offset
     );
+    if (this->is_talking) {
+        auto player_world_position = this->get_position().as_int();
+        auto player_camera_position = to_camera_position(
+            player_world_position + Vector2D<int>{10, 40},
+            {0, 0},
+            camera_offset
+        );
+        // Talking area
+        auto rect = to_sdl_rect(Region2D<int>{
+            player_camera_position.x - 5,
+            player_camera_position.y - 5,
+            5 + int(this->talking_message.size()) * 6 + 5,
+            5 + 6 * 1 + 5,
+        });
+        SDL_RenderFillRect(renderer, &rect);
+
+        // TODO: Move loaded media around
+        auto filename = std::string("monogram.png");
+        auto monogram = load_media("assets/sprites/" + filename, renderer);
+        gout(
+            this->renderer,
+            monogram,
+            player_camera_position,
+            this->talking_message,
+            RGBColor{218, 73, 73}
+        );
+    }
 }
 
-void Pig::think(double elapsedTime)
+void Pig::run_left()
 {
-    this->think_timeout -= elapsedTime;
-    if (this->think_timeout <= 0.) {
-        switch (random_int(0, 2)) {
-            case 0: {
-                this->running_side = -1;
-                this->face = -1;
-                break;
-            };
-            case 1: {
-                this->running_side = 0;
-                break;
-            };
-            case 2: {
-                this->running_side = +1;
-                this->face = +1;
-                break;
-            };
+    this->running_side = -1;
+    this->face = -1;
+}
+
+void Pig::run_right()
+{
+    this->running_side = +1;
+    this->face = +1;
+}
+
+void Pig::stop()
+{
+    this->running_side = 0;
+}
+
+void Pig::turn_to(int face)
+{
+    this->face = face;
+}
+
+void Pig::talk(std::string const& message)
+{
+    this->stop();
+    this->is_talking = true;
+    this->talking_message = message;
+}
+
+void Pig::think(double elapsed_time)
+{
+    if (this->script) {
+        (*this->script).run(elapsed_time);
+    } else {
+        this->think_timeout -= elapsed_time;
+        if (this->think_timeout <= 0.) {
+            switch (random_int(0, 2)) {
+                case 0: {
+                    this->run_left();
+                    break;
+                };
+                case 1: {
+                    this->stop();
+                    break;
+                };
+                case 2: {
+                    this->run_right();
+                    break;
+                };
+            }
+            this->think_timeout = 1000.;
         }
-        this->think_timeout = 1000.;
     }
+}
+
+int Pig::get_dynamic_property(int property_id) const
+{
+    if (property_id == SceneScriptLinePropertyId) {
+        if (this->script) {
+            return this->script->get_active_script_line();
+        }
+    }
+    throw std::runtime_error("Unknown property");
 }
 
 void Pig::connect_callbacks()
@@ -166,71 +323,4 @@ Pig& Pig::operator=(Pig const& other)
     this->is_dead = other.is_dead;
 
     return *this;
-}
-
-Pig::Pig(SDL_Renderer* renderer, double pos_x, double pos_y)
-    : running_side(0)
-    , position{pos_x, pos_y}
-    , old_position{pos_x, pos_y}
-    , velocity{0.0, 0.0}
-    , renderer(renderer)
-    , spritesheet(load_media("assets/sprites/pig80x80.png", renderer))
-    , think_timeout(1000.)
-    , is_taking_damage(false)
-    , life(2)
-    , is_dying(false)
-    , is_dead(false)
-{
-    auto register_animation = [&](int id, std::vector<std::tuple<int, int>> const& frames, double time) {
-        this->animations.insert(std::make_pair(id, Animation(this->spritesheet, frames, 80, 80, time)));
-    };
-    
-    register_animation(
-        Pig::IDLE_ANIMATION, 
-        {
-            {3, 3},
-            {4, 3},
-            {5, 3},
-            {0, 4},
-            {1, 4},
-        },
-        100.
-    );
-    register_animation(
-        Pig::RUNNING_ANIMATION,
-        {
-            {2, 2},
-            {3, 2},
-            {4, 2},
-            {5, 2},
-            {0, 3},
-            {1, 3},
-            {2, 3},
-        },
-        100.
-    );
-    register_animation(
-        Pig::TAKING_DAMAGE_ANIMATION,
-        {
-            {5, 0},
-            {6, 0},
-            {0, 1},
-            {6, 0},
-            {0, 1},
-        },
-        100.
-    );
-    register_animation(
-        Pig::DYING_ANIMATION,
-        {
-            {3, 0},
-            {2, 0},
-            {1, 0},
-            {1, 0},
-            {1, 0},
-        },
-        100.
-    );
-
-    this->connect_callbacks();
 }

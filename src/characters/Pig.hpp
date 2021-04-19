@@ -2,7 +2,7 @@
 #define __PIG_HPP
 
 #include <characters/IGameCharacter.hpp>
-
+#include <SceneScript.hpp>
 #include <Animation.hpp>
 #include <Vector2D.hpp>
 
@@ -18,6 +18,7 @@ public:
     static auto constexpr RUNNING_ANIMATION = 1;
     static auto constexpr TAKING_DAMAGE_ANIMATION = 2;
     static auto constexpr DYING_ANIMATION = 3;
+    static auto constexpr TALKING_ANIMATION = 4;
 
     static auto constexpr collision_offset_x = 30.;
     static auto constexpr collision_offset_y = 30.;
@@ -31,6 +32,7 @@ public:
 
     virtual ~Pig(); 
 
+    void set_script(SceneScript&& s);
     void set_position(double x, double y) override;
     Vector2D<double> get_position() const override;
     Vector2D<double> get_velocity() const override;
@@ -42,6 +44,12 @@ public:
     void start_taking_damage();
     void run_animation(double elapsedTime) override;
     void think(double elapsedTime);
+    int get_dynamic_property(int property_id) const;
+    void run_left();
+    void run_right();
+    void stop();
+    void turn_to(int face);
+    void talk(std::string const& message);
 
 private:
     void connect_callbacks();
@@ -60,7 +68,12 @@ public:
     int life;
     bool is_dying;
     bool is_dead;
+    bool is_talking;
+    std::string talking_message;
+
     std::optional<std::function<void()>> on_start_taking_damage;
+    std::optional<SceneScript> script;
+    std::vector<std::function<void(int)>> post_animations;
 };
 
 #endif
