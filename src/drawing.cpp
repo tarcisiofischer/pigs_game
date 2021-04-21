@@ -88,7 +88,7 @@ void draw_line(
     SDL_RenderDrawLine(renderer, start_position.x, start_position.y, end_position.x, end_position.y);
 }
 
-void gout(
+Region2D<int> gout(
     SDL_Renderer* renderer,
     SDL_Texture* spritesheet,
     Vector2D<int> const& static_camera_position,
@@ -96,6 +96,8 @@ void gout(
     RGBColor const& text_color
 )
 {
+    auto gout_region = Region2D<int>{static_camera_position.x, static_camera_position.y, 0, 0};
+
     auto size = Vector2D<int>{6, 9};
     auto srcrect = SDL_Rect{0, 0, size.x, size.y};
     auto dstrect = SDL_Rect{static_camera_position.x, static_camera_position.y, size.x, size.y};
@@ -108,5 +110,9 @@ void gout(
         srcrect.y = size.y * charmap_pos.y;
         SDL_RenderCopy(renderer, spritesheet, &srcrect, &dstrect);
         dstrect.x += size.x;
+        gout_region.w += size.x;
     }
+    gout_region.h += size.y;
+
+    return gout_region;
 }

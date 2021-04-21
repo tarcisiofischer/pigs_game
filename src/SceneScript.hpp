@@ -17,32 +17,62 @@ class AbstractSceneHandler
 public:
     AbstractSceneHandler();
 
-    virtual void run(SceneScript* script, int elapsed_time) = 0;
+    virtual void run(IGameCharacter* c, SceneScript* script, double elapsed_time) = 0;
     bool is_finished();
 
 protected:
     bool finished;
 };
 
+class WaitTime : public AbstractSceneHandler
+{
+public:
+    WaitTime(double desired_time);
+    void run(IGameCharacter* c, SceneScript* script, double elapsed_time);
+
+private:
+    double desired_time;
+    double current_time;
+};
+
+
 class WalkTo : public AbstractSceneHandler
 {
 public:
-    WalkTo(IGameCharacter* c, int desired_position_x);
-    void run(SceneScript* script, int elapsed_time);
+    WalkTo(int desired_position_x);
+    void run(IGameCharacter* c, SceneScript* script, double elapsed_time);
 
 private:
-    IGameCharacter* character;
     int desired_position_x;
+};
+
+class SetAngry : public AbstractSceneHandler
+{
+public:
+    SetAngry(bool is_angry);
+    void run(IGameCharacter* c, SceneScript* script, double elapsed_time);
+
+private:
+    bool is_angry;
+};
+
+class SetFear : public AbstractSceneHandler
+{
+public:
+    SetFear(bool fear);
+    void run(IGameCharacter* c, SceneScript* script, double elapsed_time);
+
+private:
+    bool is_fear;
 };
 
 class FaceTo : public AbstractSceneHandler
 {
 public:
-    FaceTo(IGameCharacter* c, int desired_face);
-    void run(SceneScript* script, int elapsed_time);
+    FaceTo(int desired_face);
+    void run(IGameCharacter* c, SceneScript* script, double elapsed_time);
 
 private:
-    IGameCharacter* character;
     int desired_face;
 };
 
@@ -55,23 +85,23 @@ public:
         Finished = 2
     };
 
-    Talk(IGameCharacter* c, std::string const& message);
-    void run(SceneScript* script, int elapsed_time);
+    Talk(std::string const& message, RGBColor const& talk_color);
+    void run(IGameCharacter* c, SceneScript* script, double elapsed_time);
 
 private:
-    IGameCharacter* character;
     std::string message;
+    RGBColor talk_color;
     TalkState state;
 };
 
 class WaitScriptEvent : public AbstractSceneHandler
 {
 public:
-    WaitScriptEvent(IGameCharacter* c, int line_number);
-    void run(SceneScript* script, int elapsed_time);
+    WaitScriptEvent(IGameCharacter* other_character, int line_number);
+    void run(IGameCharacter* c, SceneScript* script, double elapsed_time);
 
 private:
-    IGameCharacter* character;
+    IGameCharacter* other_character;
     int line_number;
 };
 
@@ -80,7 +110,7 @@ public:
     using ScriptLine = std::tuple<int, std::shared_ptr<AbstractSceneHandler>>;
 
     SceneScript(std::vector<ScriptLine> const& script);
-    void run(int elapsed_time);
+    void run(IGameCharacter* c, double elapsed_time);
     int get_active_script_line() const;
 
 private:

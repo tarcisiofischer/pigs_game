@@ -19,6 +19,9 @@ public:
     static auto constexpr TAKING_DAMAGE_ANIMATION = 2;
     static auto constexpr DYING_ANIMATION = 3;
     static auto constexpr TALKING_ANIMATION = 4;
+    static auto constexpr ANGRY_ANIMATION = 5;
+    static auto constexpr ANGRY_TALKING_ANIMATION = 6;
+    static auto constexpr FEAR_ANIMATION = 7;
 
     static auto constexpr collision_offset_x = 30.;
     static auto constexpr collision_offset_y = 30.;
@@ -49,7 +52,9 @@ public:
     void run_right();
     void stop();
     void turn_to(int face);
-    void talk(std::string const& message);
+    void talk(std::string const& message, RGBColor const& talk_color);
+    void set_angry(bool angry);
+    void set_fear(bool fear);
 
 private:
     void connect_callbacks();
@@ -69,7 +74,10 @@ public:
     bool is_dying;
     bool is_dead;
     bool is_talking;
+    bool is_angry;
+    bool is_fear;
     std::string talking_message;
+    RGBColor talk_color;
 
     std::optional<std::function<void()>> on_start_taking_damage;
     std::optional<SceneScript> script;

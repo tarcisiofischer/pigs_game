@@ -11,17 +11,31 @@ bool AbstractSceneHandler::is_finished() {
     return this->finished;
 }
 
-WalkTo::WalkTo(IGameCharacter* c, int desired_position_x)
+WaitTime::WaitTime(double desired_time)
     : AbstractSceneHandler()
-    , character(c)
+    , desired_time(desired_time)
+    , current_time(0.0)
+{}
+
+void WaitTime::run(IGameCharacter* c, SceneScript* script, double elapsed_time)
+{
+    this->current_time += elapsed_time;
+    if (this->current_time >= this->desired_time) {
+        this->finished = true;
+    }
+}
+
+
+WalkTo::WalkTo(int desired_position_x)
+    : AbstractSceneHandler()
     , desired_position_x(desired_position_x)
 {}
 
-void WalkTo::run(SceneScript* script, int elapsed_time)
+void WalkTo::run(IGameCharacter* c, SceneScript* script, double elapsed_time)
 {
-    auto* pig = dynamic_cast<Pig*>(this->character);
+    auto* pig = dynamic_cast<Pig*>(c);
 
-    auto const& pos_x = this->character->get_position().x;
+    auto const& pos_x = c->get_position().x;
     if (fabs(pos_x - desired_position_x) < 1) {
         pig->stop();
         this->finished = true;
@@ -32,31 +46,30 @@ void WalkTo::run(SceneScript* script, int elapsed_time)
     }
 }
 
-FaceTo::FaceTo(IGameCharacter* c, int desired_face)
+FaceTo::FaceTo(int desired_face)
     : AbstractSceneHandler()
-    , character(c)
     , desired_face(desired_face)
 {}
 
-void FaceTo::run(SceneScript* script, int elapsed_time)
+void FaceTo::run(IGameCharacter* c, SceneScript* script, double elapsed_time)
 {
-    auto* pig = dynamic_cast<Pig*>(this->character);
+    auto* pig = dynamic_cast<Pig*>(c);
     pig->turn_to(this->desired_face);
     this->finished = true;
 }
 
-Talk::Talk(IGameCharacter* c, std::string const& message)
+Talk::Talk(std::string const& message, RGBColor const& talk_color)
     : AbstractSceneHandler()
-    , character(c)
     , message(message)
+    , talk_color(talk_color)
     , state(TalkState::NotStarted)
 {}
 
-void Talk::run(SceneScript* script, int elapsed_time)
+void Talk::run(IGameCharacter* c, SceneScript* script, double elapsed_time)
 {
-    auto* pig = dynamic_cast<Pig*>(this->character);
+    auto* pig = dynamic_cast<Pig*>(c);
     if (this->state == TalkState::NotStarted) {
-        pig->talk(this->message);
+        pig->talk(this->message, this->talk_color);
         this->state = TalkState::Talking;
     } else if (this->state == TalkState::Talking) {
         auto keystates = SDL_GetKeyboardState(NULL);
@@ -71,16 +84,42 @@ void Talk::run(SceneScript* script, int elapsed_time)
 
 WaitScriptEvent::WaitScriptEvent(IGameCharacter* c, int line_number)
     : AbstractSceneHandler()
-    , character(c)
+    , other_character(c)
     , line_number(line_number)
 {}
 
-void WaitScriptEvent::run(SceneScript* script, int elapsed_time)
+void WaitScriptEvent::run(IGameCharacter* c, SceneScript* script, double elapsed_time)
 {
-    auto* other_pig = dynamic_cast<Pig*>(this->character);
+    auto* other_pig = dynamic_cast<Pig*>(this->other_character);
     if (this->line_number < other_pig->get_dynamic_property(SceneScriptLinePropertyId)) {
         this->finished = true;
     }
+}
+
+SetAngry::SetAngry(bool is_angry)
+    : AbstractSceneHandler()
+    , is_angry(is_angry)
+{
+    }
+
+void SetAngry::run(IGameCharacter* c, SceneScript* script, double elapsed_time)
+{
+    auto* pig = dynamic_cast<Pig*>(c);
+    pig->set_angry(this->is_angry);
+    this->finished = true;
+}
+
+SetFear::SetFear(bool is_fear)
+    : AbstractSceneHandler()
+    , is_fear(is_fear)
+{
+}
+
+void SetFear::run(IGameCharacter* c, SceneScript* script, double elapsed_time)
+{
+    auto* pig = dynamic_cast<Pig*>(c);
+    pig->set_fear(this->is_fear);
+    this->finished = true;
 }
 
 SceneScript::SceneScript(std::vector<ScriptLine> const& script)
@@ -89,14 +128,14 @@ SceneScript::SceneScript(std::vector<ScriptLine> const& script)
 {
 }
 
-void SceneScript::run(int elapsed_time)
+void SceneScript::run(IGameCharacter* c, double elapsed_time)
 {
     if (this->active_script_line >= this->full_script.size()) {
         return;
     }
 
-    auto& [i, action] = this->full_script[active_script_line];
-    action->run(this, elapsed_time);
+    auto& [i, action] = this->full_script.at(active_script_line);
+    action->run(c, this, elapsed_time);
     if (action->is_finished()) {
         this->active_script_line += 1;
     }
@@ -104,6 +143,11 @@ void SceneScript::run(int elapsed_time)
 
 int SceneScript::get_active_script_line() const
 {
-    return this->active_script_line;
+    try {
+        auto const& [i, _] = this->full_script.at(this->active_script_line);
+        return i;
+    } catch (std::out_of_range const&) {
+        auto const& [i, _] = this->full_script.at(this->active_script_line - 1);
+        return i + 1;
+    }
 }
-

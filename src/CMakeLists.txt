@@ -32,6 +32,8 @@ set(SOURCE_FILES
 
     Animation.cpp
     Animation.hpp
+    AssetsRegistry.cpp
+    AssetsRegistry.hpp
     bitmap_font.hpp
     constants.hpp
     drawing.cpp

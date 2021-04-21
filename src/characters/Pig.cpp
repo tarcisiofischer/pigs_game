@@ -1,6 +1,5 @@
 #include <characters/Pig.hpp>
-
-#include <iostream>
+#include <AssetsRegistry.hpp>
 
 Pig::Pig(SDL_Renderer* renderer, double pos_x, double pos_y)
     : running_side(0)
@@ -15,7 +14,10 @@ Pig::Pig(SDL_Renderer* renderer, double pos_x, double pos_y)
     , is_dying(false)
     , is_dead(false)
     , is_talking(false)
+    , is_angry(false)
+    , is_fear(false)
     , talking_message("")
+    , talk_color{0, 0, 0}
 {
     auto register_animation = [&](int id, std::vector<std::tuple<int, int>> const& frames, double time) {
         this->animations.insert(std::make_pair(id, Animation(this->spritesheet, frames, 80, 80, time)));
@@ -77,6 +79,33 @@ Pig::Pig(SDL_Renderer* renderer, double pos_x, double pos_y)
         },
         100.
     );
+    register_animation(
+        Pig::ANGRY_ANIMATION,
+        {
+            {5, 6},
+            {0, 7},
+        },
+        100.
+    );
+    register_animation(
+        Pig::ANGRY_TALKING_ANIMATION,
+        {
+            {1, 7},
+            {2, 7},
+            {3, 7},
+            {4, 7},
+            {5, 7},
+        },
+        100.
+    );
+    register_animation(
+        Pig::FEAR_ANIMATION,
+        {
+            {0, 8},
+            {1, 8},
+        },
+        100.
+    );
 
     this->connect_callbacks();
 }
@@ -100,6 +129,9 @@ Pig::Pig(Pig const& other)
     this->life = other.life;
     this->is_dying = other.is_dying;
     this->is_dead = other.is_dead;
+    this->is_talking = other.is_talking;
+    this->is_angry = other.is_angry;
+    this->is_fear = other.is_fear;
 }
 
 Pig::~Pig() {}
@@ -181,6 +213,18 @@ void Pig::run_animation(double elapsed_time)
         if (this->running_side != 0) {
             return RUNNING_ANIMATION;
         }
+
+        if (this->is_fear) {
+            return FEAR_ANIMATION;
+        }
+
+        if (this->is_angry && this->is_talking) {
+            return ANGRY_TALKING_ANIMATION;
+        }
+        if (this->is_angry) {
+            return ANGRY_ANIMATION;
+        }
+
         if (this->is_talking) {
             return TALKING_ANIMATION;
         }
@@ -195,6 +239,7 @@ void Pig::run_animation(double elapsed_time)
         camera_offset
     );
     if (this->is_talking) {
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         auto player_world_position = this->get_position().as_int();
         auto player_camera_position = to_camera_position(
             player_world_position + Vector2D<int>{10, 40},
@@ -210,15 +255,58 @@ void Pig::run_animation(double elapsed_time)
         });
         SDL_RenderFillRect(renderer, &rect);
 
-        // TODO: Move loaded media around
-        auto filename = std::string("monogram.png");
-        auto monogram = load_media("assets/sprites/" + filename, renderer);
+        {
+            auto srcrect = SDL_Rect{0, 0, 5, 4};
+            auto dstrect = SDL_Rect{rect.x - 5, rect.y - 4, 5, 4};
+            SDL_RenderCopy(renderer, assets_registry.talk_baloon, &srcrect, &dstrect);
+        }
+        {
+            auto srcrect = SDL_Rect{20, 4, 1, 4};
+            auto dstrect = SDL_Rect{rect.x, rect.y - 4, rect.w, 5};
+            SDL_RenderCopy(renderer, assets_registry.talk_baloon, &srcrect, &dstrect);
+        }
+        {
+            auto srcrect = SDL_Rect{10, 0, 5, 4};
+            auto dstrect = SDL_Rect{rect.x + rect.w, rect.y -4, 5, 4};
+            SDL_RenderCopy(renderer, assets_registry.talk_baloon, &srcrect, &dstrect);
+        }
+        {
+            auto srcrect = SDL_Rect{25, 0, 5, 1};
+            auto dstrect = SDL_Rect{rect.x + rect.w, rect.y, 5, rect.h};
+            SDL_RenderCopy(renderer, assets_registry.talk_baloon, &srcrect, &dstrect);
+        }
+        {
+            auto srcrect = SDL_Rect{15, 0, 5, 4};
+            auto dstrect = SDL_Rect{rect.x + rect.w, rect.y + rect.h, 5, 4};
+            SDL_RenderCopy(renderer, assets_registry.talk_baloon, &srcrect, &dstrect);
+        }
+        {
+            auto srcrect = SDL_Rect{20, 0, 1, 4};
+            auto dstrect = SDL_Rect{rect.x, rect.y + rect.h, rect.w, 4};
+            SDL_RenderCopy(renderer, assets_registry.talk_baloon, &srcrect, &dstrect);
+        }
+        {
+            auto srcrect = SDL_Rect{5, 0, 5, 4};
+            auto dstrect = SDL_Rect{rect.x - 5, rect.y + rect.h, 5, 4};
+            SDL_RenderCopy(renderer, assets_registry.talk_baloon, &srcrect, &dstrect);
+        }
+        {
+            auto srcrect = SDL_Rect{25, 4, 5, 1};
+            auto dstrect = SDL_Rect{rect.x - 5, rect.y, 5, rect.h};
+            SDL_RenderCopy(renderer, assets_registry.talk_baloon, &srcrect, &dstrect);
+        }
+        {
+            auto srcrect = SDL_Rect{0, 4, 5, 4};
+            auto dstrect = SDL_Rect{rect.x + 15, rect.y + rect.h + 3, 5, 4};
+            SDL_RenderCopy(renderer, assets_registry.talk_baloon, &srcrect, &dstrect);
+        }
+
         gout(
             this->renderer,
-            monogram,
+            assets_registry.monogram,
             player_camera_position,
             this->talking_message,
-            RGBColor{218, 73, 73}
+            this->talk_color
         );
     }
 }
@@ -245,17 +333,28 @@ void Pig::turn_to(int face)
     this->face = face;
 }
 
-void Pig::talk(std::string const& message)
+void Pig::talk(std::string const& message, RGBColor const& talk_color)
 {
     this->stop();
     this->is_talking = true;
     this->talking_message = message;
+    this->talk_color = talk_color;
+}
+
+void Pig::set_angry(bool angry)
+{
+    this->is_angry = angry;
+}
+
+void Pig::set_fear(bool fear)
+{
+    this->is_fear = fear;
 }
 
 void Pig::think(double elapsed_time)
 {
     if (this->script) {
-        (*this->script).run(elapsed_time);
+        (*this->script).run(this, elapsed_time);
     } else {
         this->think_timeout -= elapsed_time;
         if (this->think_timeout <= 0.) {

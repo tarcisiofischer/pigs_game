@@ -61,7 +61,7 @@ void draw_line(
     RGBColor const& fill_color
 );
 
-void gout(
+Region2D<int> gout(
     SDL_Renderer* renderer,
     SDL_Texture* spritesheet,
     Vector2D<int> const& static_camera_position,
