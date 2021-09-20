@@ -248,56 +248,56 @@ void Pig::run_animation(double elapsed_time)
         );
         // Talking area
         auto rect = to_sdl_rect(Region2D<int>{
-            player_camera_position.x - 5,
-            player_camera_position.y - 5,
-            5 + int(this->talking_message.size()) * 6 + 5,
-            5 + 6 * 1 + 5,
+            player_camera_position.x - 5 * SCALE_SIZE,
+            player_camera_position.y - 5 * SCALE_SIZE,
+            (5 + int(this->talking_message.size()) * 6 + 5) * SCALE_SIZE,
+            (5 + 6 * 1 + 5) * SCALE_SIZE,
         });
         SDL_RenderFillRect(renderer, &rect);
 
         {
             auto srcrect = SDL_Rect{0, 0, 5, 4};
-            auto dstrect = SDL_Rect{rect.x - 5, rect.y - 4, 5, 4};
+            auto dstrect = SDL_Rect{rect.x - 5 * SCALE_SIZE, rect.y - 4 * SCALE_SIZE, 5 * SCALE_SIZE, 4 * SCALE_SIZE};
             SDL_RenderCopy(renderer, assets_registry.talk_baloon, &srcrect, &dstrect);
         }
         {
             auto srcrect = SDL_Rect{20, 4, 1, 4};
-            auto dstrect = SDL_Rect{rect.x, rect.y - 4, rect.w, 5};
+            auto dstrect = SDL_Rect{rect.x, rect.y - 4 * SCALE_SIZE, rect.w, 5 * SCALE_SIZE};
             SDL_RenderCopy(renderer, assets_registry.talk_baloon, &srcrect, &dstrect);
         }
         {
             auto srcrect = SDL_Rect{10, 0, 5, 4};
-            auto dstrect = SDL_Rect{rect.x + rect.w, rect.y -4, 5, 4};
+            auto dstrect = SDL_Rect{rect.x + rect.w, rect.y - 4 * SCALE_SIZE, 5 * SCALE_SIZE, 4 * SCALE_SIZE};
             SDL_RenderCopy(renderer, assets_registry.talk_baloon, &srcrect, &dstrect);
         }
         {
             auto srcrect = SDL_Rect{25, 0, 5, 1};
-            auto dstrect = SDL_Rect{rect.x + rect.w, rect.y, 5, rect.h};
+            auto dstrect = SDL_Rect{rect.x + rect.w, rect.y, 5 * SCALE_SIZE, rect.h};
             SDL_RenderCopy(renderer, assets_registry.talk_baloon, &srcrect, &dstrect);
         }
         {
             auto srcrect = SDL_Rect{15, 0, 5, 4};
-            auto dstrect = SDL_Rect{rect.x + rect.w, rect.y + rect.h, 5, 4};
+            auto dstrect = SDL_Rect{rect.x + rect.w, rect.y + rect.h, 5 * SCALE_SIZE, 4 * SCALE_SIZE};
             SDL_RenderCopy(renderer, assets_registry.talk_baloon, &srcrect, &dstrect);
         }
         {
             auto srcrect = SDL_Rect{20, 0, 1, 4};
-            auto dstrect = SDL_Rect{rect.x, rect.y + rect.h, rect.w, 4};
+            auto dstrect = SDL_Rect{rect.x, rect.y + rect.h, rect.w, 4 * SCALE_SIZE};
             SDL_RenderCopy(renderer, assets_registry.talk_baloon, &srcrect, &dstrect);
         }
         {
             auto srcrect = SDL_Rect{5, 0, 5, 4};
-            auto dstrect = SDL_Rect{rect.x - 5, rect.y + rect.h, 5, 4};
+            auto dstrect = SDL_Rect{rect.x - 5 * SCALE_SIZE, rect.y + rect.h, 5 * SCALE_SIZE, 4 * SCALE_SIZE};
             SDL_RenderCopy(renderer, assets_registry.talk_baloon, &srcrect, &dstrect);
         }
         {
             auto srcrect = SDL_Rect{25, 4, 5, 1};
-            auto dstrect = SDL_Rect{rect.x - 5, rect.y, 5, rect.h};
+            auto dstrect = SDL_Rect{rect.x - 5 * SCALE_SIZE, rect.y, 5 * SCALE_SIZE, rect.h};
             SDL_RenderCopy(renderer, assets_registry.talk_baloon, &srcrect, &dstrect);
         }
         {
             auto srcrect = SDL_Rect{0, 4, 5, 4};
-            auto dstrect = SDL_Rect{rect.x + 15, rect.y + rect.h + 3, 5, 4};
+            auto dstrect = SDL_Rect{rect.x + 15 * SCALE_SIZE, rect.y + rect.h + 3 * SCALE_SIZE, 5 * SCALE_SIZE, 4 * SCALE_SIZE};
             SDL_RenderCopy(renderer, assets_registry.talk_baloon, &srcrect, &dstrect);
         }
 

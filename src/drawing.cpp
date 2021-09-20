@@ -100,7 +100,7 @@ Region2D<int> gout(
 
     auto size = Vector2D<int>{6, 9};
     auto srcrect = SDL_Rect{0, 0, size.x, size.y};
-    auto dstrect = SDL_Rect{static_camera_position.x, static_camera_position.y, size.x, size.y};
+    auto dstrect = SDL_Rect{static_camera_position.x, static_camera_position.y, size.x * SCALE_SIZE, size.y * SCALE_SIZE};
     auto const& charmap = MonogramFont::charmap();
 
     SDL_SetTextureColorMod(spritesheet, text_color.r, text_color.g, text_color.b);
@@ -109,8 +109,8 @@ Region2D<int> gout(
         srcrect.x = size.x * charmap_pos.x;
         srcrect.y = size.y * charmap_pos.y;
         SDL_RenderCopy(renderer, spritesheet, &srcrect, &dstrect);
-        dstrect.x += size.x;
-        gout_region.w += size.x;
+        dstrect.x += size.x * SCALE_SIZE;
+        gout_region.w += size.x * SCALE_SIZE;
     }
     gout_region.h += size.y;
 
