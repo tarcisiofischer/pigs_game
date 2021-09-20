@@ -74,7 +74,7 @@ std::vector<IGameCharacter*> build_game_characters(SDL_Renderer* renderer, GameM
     return game_characters;
 }
 
-auto constexpr ACTIVE_MAP = "intro.map";
+auto constexpr ACTIVE_MAP = "maps/intro.map";
 
 static std::map<std::string, std::string> tr = {
     {
