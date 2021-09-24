@@ -122,6 +122,17 @@ void SetFear::run(IGameCharacter* c, SceneScript* script, double elapsed_time)
     this->finished = true;
 }
 
+RunLambdaEvent::RunLambdaEvent(std::function<void()> const& lambda_f)
+    : lambda_f(lambda_f)
+{}
+
+void RunLambdaEvent::run(IGameCharacter* c, SceneScript* script, double elapsed_time)
+{
+    this->lambda_f();
+    this->finished = true;
+}
+
+
 SceneScript::SceneScript(std::vector<ScriptLine> const& script)
     : full_script(std::move(script))
     , active_script_line(0)

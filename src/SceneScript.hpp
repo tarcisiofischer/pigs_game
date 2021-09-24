@@ -6,6 +6,7 @@
 #include <vector>
 #include <tuple>
 #include <memory>
+#include <functional>
 
 auto constexpr SceneScriptLinePropertyId = 1;
 
@@ -105,6 +106,15 @@ private:
     int line_number;
 };
 
+class RunLambdaEvent : public AbstractSceneHandler
+{
+public:
+    RunLambdaEvent(std::function<void()> const& lambda_f);
+    void run(IGameCharacter* c, SceneScript* script, double elapsed_time);
+private:
+    std::function<void()> lambda_f;
+};
+
 class SceneScript {
 public:
     using ScriptLine = std::tuple<int, std::shared_ptr<AbstractSceneHandler>>;
@@ -118,5 +128,4 @@ private:
     int active_script_line;
 };
 
-class SceneScript;
 #endif

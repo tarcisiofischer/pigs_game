@@ -12,6 +12,8 @@ set(SOURCE_FILES
     drawing.cpp
     drawing.hpp
 
+    characters/builder.cpp
+    characters/builder.hpp
     characters/IGameCharacter.hpp
     characters/Cannon.cpp
     characters/Cannon.hpp
@@ -24,11 +26,16 @@ set(SOURCE_FILES
     characters/PigWithMatches.hpp
 
     collision/aabb.hpp
+    collision/character_collision.cpp
     collision/character_collision.hpp
     collision/CollisionRegion.hpp
     collision/enums.hpp
     collision/tilemap_collision.hpp
     collision/tilemap_collision.cpp
+
+    levels/IGameLevel.hpp
+    levels/PreludeLevel.hpp
+    levels/PreludeLevel.cpp
 
     Animation.cpp
     Animation.hpp
@@ -40,6 +47,8 @@ set(SOURCE_FILES
     drawing.hpp
     GameController.cpp
     GameController.hpp
+    GameHandler.cpp
+    GameHandler.hpp
     GameMap.cpp
     GameMap.hpp
     io.cpp
