@@ -21,6 +21,7 @@
 #include <characters/King.hpp>
 
 #include <levels/PreludeLevel.hpp>
+#include <levels/EntryLevel.hpp>
 
 #include <GameHandler.hpp>
 #include <AssetsRegistry.hpp>
@@ -67,7 +68,7 @@ int main(int argc, char* args[])
     }
 
     auto game_handler = GameHandler(window);
-    game_handler.set_active_level(std::make_unique<PreludeLevel>(game_handler));
+    game_handler.set_active_level(std::make_unique<EntryLevel>(game_handler));
 
     auto last = (unsigned long long)(0);
     auto current = SDL_GetPerformanceCounter();

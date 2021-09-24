@@ -8,6 +8,8 @@
 #include <collision/tilemap_collision.hpp>
 #include <collision/character_collision.hpp>
 
+#include <characters/King.hpp>
+
 // TODO PIG-12: Initialize the camera on main (avoid global)
 extern Vector2D<int> camera_offset;
 
@@ -64,9 +66,10 @@ bool GameHandler::process_inputs()
 
     game_controller.update();
     auto keystates = SDL_GetKeyboardState(NULL);
-    // if (player) {
-    //     player->handle_controller(keystates);
-    // }
+    auto player = this->player();
+    if (player) {
+        player->handle_controller(keystates);
+    }
     return true;
 }
 
@@ -75,6 +78,18 @@ void GameHandler::update(double elapsed_time)
     this->update_characters(elapsed_time);
     this->compute_collisions();
     this->window_shaker.update(elapsed_time);
+}
+
+King* GameHandler::player()
+{
+    auto& characters = this->active_lvl->get_characters();
+    for (auto& c : characters) {
+        auto* k = dynamic_cast<King*>(c);
+        if (k != nullptr) {
+            return k;
+        }
+    }
+    return nullptr;
 }
 
 void GameHandler::render(double elapsed_time)
@@ -89,6 +104,7 @@ void GameHandler::render(double elapsed_time)
 
     auto const& map = this->active_lvl->get_map();
     auto const& game_characters = this->active_lvl->get_characters();
+    auto player = this->player();
 
     // Draw background
     auto shake = this->window_shaker.get_shake();
@@ -127,21 +143,21 @@ void GameHandler::render(double elapsed_time)
     }
     
     // HUD
-    // if (player) {
-    //     {
-    //         auto offset = Vector2D<int>{0, 0};
-    //         auto size = Vector2D<int>{66, 34};
-    //         auto static_camera_position = Vector2D<int>{10, SCREEN_HEIGHT / SCALE_SIZE - size.y - 10};
-    //         draw_static_sprite(renderer, assets_registry.lifebar, offset, static_camera_position, size);
-    //     }
+    if (player) {
+        {
+            auto offset = Vector2D<int>{0, 0};
+            auto size = Vector2D<int>{66, 34};
+            auto static_camera_position = Vector2D<int>{10, SCREEN_HEIGHT / SCALE_SIZE - size.y - 10};
+            draw_static_sprite(renderer, assets_registry.lifebar, offset, static_camera_position, size);
+        }
 
-    //     auto offset = Vector2D<int>{0, 0};
-    //     auto size = Vector2D<int>{18, 14};
-    //     for (int i = 0; i < player->life; ++i) {
-    //         auto camera_position = Vector2D<int>{21 + 11 * i, SCREEN_HEIGHT / SCALE_SIZE - size.y - 20};
-    //         draw_static_sprite(renderer, assets_registry.lifebar_heart, offset, camera_position, size);
-    //     }
-    // }
+        auto offset = Vector2D<int>{0, 0};
+        auto size = Vector2D<int>{18, 14};
+        for (int i = 0; i < player->life; ++i) {
+            auto camera_position = Vector2D<int>{21 + 11 * i, SCREEN_HEIGHT / SCALE_SIZE - size.y - 20};
+            draw_static_sprite(renderer, assets_registry.lifebar_heart, offset, camera_position, size);
+        }
+    }
 
     for (auto& game_character : game_characters) {
         game_character->run_animation(elapsed_time);
@@ -196,9 +212,9 @@ void GameHandler::render(double elapsed_time)
     // Update camera
     {
         auto position = Vector2D<int>{0, 0};
-        // if (player) {
-        //     position = player->get_position().as_int();
-        // }
+        if (player) {
+            position = player->get_position().as_int();
+        }
 
         auto camera_min_x = 0;
         auto user_centered_camera_x = position.x - SCREEN_WIDTH / (2 * SCALE_SIZE);

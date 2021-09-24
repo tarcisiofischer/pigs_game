@@ -7,6 +7,8 @@
 #include <Vector2D.hpp>
 #include <TransitionAnimation.hpp>
 
+#include <characters/King.hpp>
+
 #include <random.hpp>
 #include <memory>
 
@@ -48,6 +50,8 @@ public:
     bool process_inputs();
     void update(double elapsed_time);
     void render(double elapsed_time);
+
+    King* player();
 
     SDL_Renderer* get_renderer();
     TransitionAnimation& get_transition_animation();

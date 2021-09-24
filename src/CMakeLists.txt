@@ -34,6 +34,8 @@ set(SOURCE_FILES
     collision/tilemap_collision.cpp
 
     levels/IGameLevel.hpp
+    levels/EntryLevel.hpp
+    levels/EntryLevel.cpp
     levels/PreludeLevel.hpp
     levels/PreludeLevel.cpp
 
