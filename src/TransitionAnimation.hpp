@@ -10,21 +10,24 @@
 
 #include <constants.hpp>
 
+enum class TransitionAnimationState {
+    blacking = 0,
+    waiting = 1,
+    clearing = 2,
+    finished = 3
+};
+
 class TransitionAnimation
 {
 public:
-    static auto constexpr BLACKING = 0;
-    static auto constexpr WAITING = 1;
-    static auto constexpr CLEARING = 2;
-    static auto constexpr FINISHED = 3;
-
     TransitionAnimation();
     void reset();
     void register_transition_callback(std::function<void()> const& f);
     void run(SDL_Renderer* renderer, double elapsedTime);
+    TransitionAnimationState current_state() const;
 
 private:
-    int animation_state;
+    TransitionAnimationState animation_state;
     double wait_timeout;
     double transition_acceleration;
     double transition_velocity;

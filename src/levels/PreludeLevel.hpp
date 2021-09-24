@@ -86,6 +86,7 @@ public:
 
     GameMap& get_map() override;
     std::vector<IGameCharacter*>& get_characters() override;
+    std::function<void()> get_collision_callback(int callback_collision_id, IGameCharacter* character) override;
 
 private:
     GameMap map;

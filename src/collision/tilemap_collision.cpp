@@ -1,18 +1,29 @@
 #include <collision/tilemap_collision.hpp>
+#include <levels/IGameLevel.hpp>
 #include <cmath>
+#include <characters/IGameCharacter.hpp>
+#include <GameMap.hpp>
+#include <constants.hpp>
+#include <collision/aabb.hpp>
+#include <collision/enums.hpp>
 
+#include <array>
 #include <iostream>
+#include <functional>
 
 namespace {
     struct TileCollisionInformation {
         Region2D<double> tile_region;
         bool is_collideable;
         CollisionType collision_type;
+        std::function<void()> collision_callback;
     };
 
     TileCollisionInformation tile_info_from_position(
         GameMap const& map,
-        Vector2D<double> const& position
+        Vector2D<double> const& position,
+        IGameLevel& level,
+        IGameCharacter* character
     )
     {
         int j = std::floor(position.x / TILE_SIZE);
@@ -28,6 +39,7 @@ namespace {
 
         auto is_collideable = false;
         auto collision_type = CollisionType::NO_COLLISION;
+        auto collision_callback = std::function<void()>();
 
         if (map.height - i - 1 < 0 || j < 0) {
             return {tile_region, is_collideable, collision_type};
@@ -48,11 +60,17 @@ namespace {
                 if (foreground_id == collision_tile_id) {
                     is_collideable = true;
                     collision_type = CollisionType::FOREGROUND_COLLISION;
+
+                    // TODO: Fix special collideable callback handling
+                    if (collision_tile_id == 21) {
+                        auto collision_callback_id = 1;
+                        collision_callback = level.get_collision_callback(collision_callback_id, character);
+                    }
                 }
             }
         }
 
-        return {tile_region, is_collideable, collision_type};
+        return {tile_region, is_collideable, collision_type, collision_callback};
     }
 
     void compute_single_collission(TileCollisionInformation const& info, IGameCharacter* character)
@@ -67,6 +85,10 @@ namespace {
         auto const& current_velocity = character->get_velocity();
 
         if (check_aabb_collision(collision_region, tile_region)) {
+            if (info.collision_callback) {
+                info.collision_callback();
+            }
+
             if (
                 collision_region.x + collision_region.w > tile_region.x &&
                 old_collision_region.x + old_collision_region.w <= tile_region.x
@@ -106,7 +128,7 @@ namespace {
     }
 }
 
-void compute_tilemap_collisions(GameMap const& map, IGameCharacter* character)
+void compute_tilemap_collisions(GameMap const& map, IGameCharacter* character, IGameLevel& level)
 {
     auto collision_region_info = character->get_collision_region_information();
     auto const& collision_region = collision_region_info.collision_region;
@@ -114,7 +136,7 @@ void compute_tilemap_collisions(GameMap const& map, IGameCharacter* character)
 
     // Left-bottom
     {
-        auto tile_collision_info = tile_info_from_position(map, {collision_region.x, collision_region.y});
+        auto tile_collision_info = tile_info_from_position(map, {collision_region.x, collision_region.y}, level, character);
         if (tile_collision_info.is_collideable) {
             compute_single_collission(tile_collision_info, character);
         }
@@ -122,7 +144,7 @@ void compute_tilemap_collisions(GameMap const& map, IGameCharacter* character)
 
     // Right-bottom
     {
-        auto tile_collision_info = tile_info_from_position(map, {collision_region.x + collision_region.w, collision_region.y});
+        auto tile_collision_info = tile_info_from_position(map, {collision_region.x + collision_region.w, collision_region.y}, level, character);
         if (tile_collision_info.is_collideable) {
             compute_single_collission(tile_collision_info, character);
         }
@@ -130,15 +152,15 @@ void compute_tilemap_collisions(GameMap const& map, IGameCharacter* character)
 
     // Left-top
     {
-        auto tile_collision_info = tile_info_from_position(map, {collision_region.x, collision_region.y + collision_region.h});
+        auto tile_collision_info = tile_info_from_position(map, {collision_region.x, collision_region.y + collision_region.h}, level, character);
         if (tile_collision_info.is_collideable) {
             compute_single_collission(tile_collision_info, character);
         }
     }
 
-    // Left-top
+    // Right-top
     {
-        auto tile_collision_info = tile_info_from_position(map, {collision_region.x + collision_region.w, collision_region.y + collision_region.h});
+        auto tile_collision_info = tile_info_from_position(map, {collision_region.x + collision_region.w, collision_region.y + collision_region.h}, level, character);
         if (tile_collision_info.is_collideable) {
             compute_single_collission(tile_collision_info, character);
         }

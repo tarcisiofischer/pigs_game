@@ -77,5 +77,6 @@ GameMap load_map(std::string const& filename)
     }
 
     mapfile.close();
+
     return map;
 }

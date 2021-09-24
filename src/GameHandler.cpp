@@ -246,7 +246,7 @@ void GameHandler::compute_collisions()
     auto& map = this->active_lvl->get_map();
 
     for (auto* c : game_characters) {
-        compute_tilemap_collisions(map, c);
+        compute_tilemap_collisions(map, c, *this->active_lvl);
     }
     compute_characters_collisions(game_characters);
 }

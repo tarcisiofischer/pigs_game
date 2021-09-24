@@ -36,6 +36,8 @@ set(SOURCE_FILES
     levels/IGameLevel.hpp
     levels/EntryLevel.hpp
     levels/EntryLevel.cpp
+    levels/Level2.hpp
+    levels/Level2.cpp
     levels/PreludeLevel.hpp
     levels/PreludeLevel.cpp
 

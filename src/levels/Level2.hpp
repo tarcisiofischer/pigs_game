@@ -1,5 +1,5 @@
-#ifndef __LVL_ENTRY_HPP
-#define __LVL_ENTRY_HPP
+#ifndef __LVL_2_HPP
+#define __LVL_2_HPP
 
 #include <GameMap.hpp>
 #include <levels/IGameLevel.hpp>
@@ -14,10 +14,10 @@ class IGameCharacter;
 class TransitionAnimation;
 class GameHandler;
 
-class EntryLevel : public IGameLevel
+class Level2 : public IGameLevel
 {
 public:
-    EntryLevel(GameHandler& game_handler);
+    Level2(GameHandler& game_handler);
 
     GameMap& get_map() override;
     std::vector<IGameCharacter*>& get_characters() override;

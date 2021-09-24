@@ -9,24 +9,24 @@
 #include <io.hpp>
 #include <GameHandler.hpp>
 
-EntryLevel::EntryLevel(GameHandler& game_handler)
-    : map(load_map("maps/entry_level.map"))
+Level2::Level2(GameHandler& game_handler)
+    : map(load_map("maps/level2.map"))
     , characters(build_game_characters(game_handler.get_renderer(), map))
     , game_handler(game_handler)
 {
 }
 
-GameMap& EntryLevel::get_map()
+GameMap& Level2::get_map()
 {
     return this->map;
 }
 
-std::vector<IGameCharacter*>& EntryLevel::get_characters()
+std::vector<IGameCharacter*>& Level2::get_characters()
 {
     return this->characters;
 }
 
-std::function<void()> EntryLevel::get_collision_callback(int callback_collision_id, IGameCharacter* character)
+std::function<void()> Level2::get_collision_callback(int callback_collision_id, IGameCharacter* character)
 {
     if (callback_collision_id == 1) {
         auto* player = dynamic_cast<King*>(character);
@@ -36,7 +36,7 @@ std::function<void()> EntryLevel::get_collision_callback(int callback_collision_
                 auto& transition = game_handler.get_transition_animation();
                 if (transition.current_state() == TransitionAnimationState::finished) {
                     transition.register_transition_callback([&](){
-                        game_handler.set_active_level(std::make_unique<Level2>(game_handler));
+                        game_handler.set_active_level(std::make_unique<EntryLevel>(game_handler));
                     });
                     transition.reset();
                 }

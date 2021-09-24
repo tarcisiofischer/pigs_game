@@ -105,7 +105,13 @@ Region2D<int> gout(
 
     SDL_SetTextureColorMod(spritesheet, text_color.r, text_color.g, text_color.b);
     for (auto const& c : message) {
-        auto const& charmap_pos = charmap.at(c);
+        auto const& charmap_pos = [&]() {
+            try {
+                return charmap.at(c);
+            } catch(std::out_of_range) {
+                return charmap.at('?');
+            }
+        }();
         srcrect.x = size.x * charmap_pos.x;
         srcrect.y = size.y * charmap_pos.y;
         SDL_RenderCopy(renderer, spritesheet, &srcrect, &dstrect);

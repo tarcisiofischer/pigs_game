@@ -25,6 +25,11 @@ std::vector<IGameCharacter*>& PreludeLevel::get_characters()
     return this->characters;
 }
 
+std::function<void()> PreludeLevel::get_collision_callback(int callback_collision_id, IGameCharacter* character)
+{
+    return nullptr;
+}
+
 void prepare_script(std::vector<IGameCharacter*> game_characters, TransitionAnimation& transition_animation)
 {
     auto pig1 = dynamic_cast<Pig*>(game_characters[0]);

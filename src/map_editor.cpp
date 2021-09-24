@@ -63,6 +63,7 @@ Options handle_args(int argc, char* argv[])
             i++;
             options.height = std::atoi(argv[i]);
         } else if (raw_arg == "--open-file") {
+            options.new_file = false;
             options.open_file = true;
             i++;
             options.filename = std::string(argv[i]);
