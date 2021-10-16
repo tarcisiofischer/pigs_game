@@ -43,7 +43,7 @@ private:
 
 class GameHandler {
 public:
-    GameHandler(SDL_Window* window);
+    explicit GameHandler(SDL_Window* window);
 
     void set_active_level(std::unique_ptr<IGameLevel>&& lvl);
 

@@ -1,4 +1,5 @@
 #include <StateTimeout.hpp>
+#include <utility>
 
 StateTimeout::StateTimeout()
     : timeout(0.0)
@@ -7,9 +8,9 @@ StateTimeout::StateTimeout()
     , started(false)
     {}
 
-StateTimeout::StateTimeout(double timeout, std::function<void()> const& f)
+StateTimeout::StateTimeout(double timeout, std::function<void()>  f)
     : timeout(timeout)
-    , function(f)
+    , function(std::move(f))
     , current_time(0.0)
     , started(false)
     {}

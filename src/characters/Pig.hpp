@@ -23,8 +23,6 @@ public:
     static auto constexpr ANGRY_TALKING_ANIMATION = 6;
     static auto constexpr FEAR_ANIMATION = 7;
 
-    static auto constexpr collision_offset_x = 30.;
-    static auto constexpr collision_offset_y = 30.;
     static auto constexpr collision_size = Vector2D<int>{18, 18};
     static auto constexpr spritesheet_offset = Vector2D<int>{31, 33};
 

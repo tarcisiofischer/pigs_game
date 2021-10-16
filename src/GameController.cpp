@@ -16,7 +16,7 @@ GameController::~GameController()
 
 void GameController::update()
 {
-    auto keystate = SDL_GetKeyboardState(NULL);
+    auto keystate = SDL_GetKeyboardState(nullptr);
 
     auto const& sdl_key = this->keyconfig[ControllerAction::ActionKey];
     if (keystate[sdl_key]) {

@@ -18,16 +18,7 @@ public:
     };
     
     static auto constexpr IDLE_ANIMATION = 0;
-
-    static auto constexpr collision_offset_x = 23.;
-    static auto constexpr collision_offset_y = 13.;
-    static auto constexpr collision_size_x = 12.;
-    static auto constexpr collision_size_y = 12.;
-
     static auto constexpr collision_size = Vector2D<int>{20, 20};
-
-    static auto constexpr ball_exit_offset_x = 8.;
-    static auto constexpr ball_exit_offset_y = 2.;
 
     CannonBall(SDL_Renderer* renderer, double pos_x, double pos_y)
         : animations()
@@ -108,7 +99,7 @@ public:
 
     CollisionRegionInformation get_collision_region_information() const override {
         if (this->state == CannonBallState::active || this->state == CannonBallState::exploding) {
-            return CollisionRegionInformation(this->position, this->old_position, this->collision_size);
+            return CollisionRegionInformation(this->position, this->old_position, CannonBall::collision_size);
         } else {
             return CollisionRegionInformation({0, 0}, {0, 0}, {0, 0});
         }

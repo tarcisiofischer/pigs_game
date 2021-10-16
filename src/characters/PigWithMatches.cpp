@@ -74,7 +74,7 @@ Vector2D<double> PigWithMatches::get_velocity() const
 
 CollisionRegionInformation PigWithMatches::get_collision_region_information() const
 {
-    return CollisionRegionInformation(this->position, this->old_position, this->collision_size);
+    return CollisionRegionInformation(this->position, this->old_position, PigWithMatches::collision_size);
 }
 
 void PigWithMatches::handle_collision(CollisionType const& type, CollisionSide const& side) {}

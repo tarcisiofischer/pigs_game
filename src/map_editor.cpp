@@ -1,6 +1,4 @@
 #include <SDL.h>
-#include <SDL_image.h>
-#include <SDL_ttf.h>
 
 #include <Vector2D.hpp>
 #include <GameMap.hpp>
@@ -12,9 +10,6 @@
 
 #include <string>
 #include <iostream>
-#include <sstream>
-#include <fstream>
-
 #include <vector>
 #include <functional>
 
@@ -26,8 +21,6 @@ auto constexpr LIGHT_GRAY_COLOR = RGBColor{102, 102, 102};
 auto constexpr GRAY_COLOR = RGBColor{72, 72, 72};
 auto constexpr DARK_PURPLE_COLOR = RGBColor{45, 35, 60};
 auto constexpr PURPLE_COLOR = RGBColor{63, 56, 81};
-auto constexpr LIGHT_PURPLE_COLOR = RGBColor{90, 80, 100};
-auto constexpr LIGHT_YELLOW_COLOR = RGBColor{250, 200, 150};
 
 struct Options {
     std::string filename;
@@ -571,7 +564,7 @@ private:
 
         int w = 0;
         int h = 0;
-        SDL_QueryTexture(selected_tileset, NULL, NULL, &w, &h);
+        SDL_QueryTexture(selected_tileset, nullptr, nullptr, &w, &h);
         auto n_tiles_per_line = w / TILE_SIZE;
 
         auto x_offset = 0;

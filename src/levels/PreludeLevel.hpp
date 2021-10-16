@@ -82,7 +82,7 @@ void prepare_script(std::vector<IGameCharacter*> game_characters, TransitionAnim
 class PreludeLevel : public IGameLevel
 {
 public:
-    PreludeLevel(GameHandler& game_handler);
+    explicit PreludeLevel(GameHandler& game_handler);
 
     GameMap& get_map() override;
     std::vector<IGameCharacter*>& get_characters() override;

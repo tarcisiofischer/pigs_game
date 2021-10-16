@@ -1,51 +1,10 @@
 #include <SDL.h>
-#include <SDL_image.h>
-#include <SDL_ttf.h>
-
-#include <cstring>
-#include <algorithm>
-#include <iostream>
-#include <functional>
-#include <optional>
-#include <vector>
-#include <tuple>
-#include <memory>
-#include <map>
-#include <variant>
-
-#include <characters/IGameCharacter.hpp>
-#include <characters/Pig.hpp>
-#include <characters/Cannon.hpp>
-#include <characters/CannonBall.hpp>
-#include <characters/PigWithMatches.hpp>
-#include <characters/King.hpp>
-
-#include <levels/PreludeLevel.hpp>
 #include <levels/EntryLevel.hpp>
-
 #include <GameHandler.hpp>
-#include <AssetsRegistry.hpp>
-#include <GameController.hpp>
-#include <SceneScript.hpp>
-#include <TransitionAnimation.hpp>
-#include <StateTimeout.hpp>
-#include <Animation.hpp>
 #include <Vector2D.hpp>
-
-#include <collision/aabb.hpp>
-#include <collision/CollisionRegion.hpp>
-#include <collision/tilemap_collision.hpp>
-#include <collision/character_collision.hpp>
-
 #include <constants.hpp>
 #include <sdl_wrappers.hpp>
-#include <random.hpp>
-#include <io.hpp>
-
-#include <string>
-#include <iostream>
-#include <sstream>
-#include <fstream>
+#include <optional>
 #include <memory>
 
 // TODO PIG-12: Initialize the camera on main (avoid global)
@@ -75,7 +34,7 @@ int main(int argc, char* args[])
     auto fps_countdown = 1000.;
     auto fps_counter = 0;
     auto fps = 0;
-    
+
     while (true) {
         last = current;
         current = SDL_GetPerformanceCounter();

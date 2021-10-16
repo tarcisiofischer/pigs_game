@@ -16,7 +16,7 @@ class Animation
 {
 public:
 	Animation(SDL_Texture *spritesheet,
-			const std::vector<std::tuple<int, int> > &frames, int framesize_x,
+			std::vector<std::tuple<int, int> > frames, int framesize_x,
 			int framesize_y, double animation_time);
     
     void set_on_finish_animation_callback(std::function<void()> const& f)
