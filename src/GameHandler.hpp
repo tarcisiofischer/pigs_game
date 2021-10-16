@@ -1,16 +1,14 @@
 #ifndef __GAME_HANDLER_HPP
 #define __GAME_HANDLER_HPP
 
-#include <levels/IGameLevel.hpp>
 #include <StateTimeout.hpp>
-#include <sdl_wrappers.hpp>
-#include <Vector2D.hpp>
 #include <TransitionAnimation.hpp>
-
+#include <Vector2D.hpp>
 #include <characters/King.hpp>
-
-#include <random.hpp>
+#include <levels/IGameLevel.hpp>
 #include <memory>
+#include <random.hpp>
+#include <sdl_wrappers.hpp>
 
 class SDL_Window;
 
@@ -20,15 +18,15 @@ public:
         : state()
         , is_shaking(false)
     {
-        this->state = StateTimeout(300., [&](){ this->is_shaking = false; });
+        this->state = StateTimeout(300., [&]() { this->is_shaking = false; });
     }
 
     Vector2D<int> get_shake()
     {
         if (!this->is_shaking) {
-            return {0, 0};
+            return { 0, 0 };
         }
-        return {random_int(-1, 1), random_int(-1, 1)};
+        return { random_int(-1, 1), random_int(-1, 1) };
     }
 
     void update(double elapsed_time)

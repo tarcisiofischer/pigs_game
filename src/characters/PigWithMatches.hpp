@@ -1,12 +1,10 @@
 #ifndef __PIG_WITH_MATCHES_HPP
 #define __PIG_WITH_MATCHES_HPP
 
-#include <characters/IGameCharacter.hpp>
-#include <characters/Cannon.hpp>
-
 #include <Animation.hpp>
 #include <Vector2D.hpp>
-
+#include <characters/Cannon.hpp>
+#include <characters/IGameCharacter.hpp>
 #include <random.hpp>
 #include <sdl_wrappers.hpp>
 
@@ -21,7 +19,7 @@ public:
 
     static auto constexpr DEFAULT_THINK_TIMEOUT = 500.0;
 
-    static auto constexpr collision_size = Vector2D<int>{18, 18};
+    static auto constexpr collision_size = Vector2D<int> { 18, 18 };
 
     PigWithMatches(SDL_Renderer* renderer, double pos_x, double pos_y, int face, Cannon& cannon);
 
@@ -35,7 +33,7 @@ public:
     void update(double elapsedTime) override;
     void run_animation(double elapsedTime) override;
     void think(double elapsedTime);
-    
+
 public:
     std::map<int, Animation> animations;
     int face;

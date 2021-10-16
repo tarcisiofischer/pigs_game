@@ -1,6 +1,6 @@
 #include <AssetsRegistry.hpp>
 
-void AssetsRegistry::load(SDL_Renderer *renderer)
+void AssetsRegistry::load(SDL_Renderer* renderer)
 {
     this->tileset = load_media("assets/sprites/tileset.png", renderer);
     this->foreground_set = load_media("assets/sprites/foreground_set.png", renderer);

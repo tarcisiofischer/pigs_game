@@ -1,21 +1,19 @@
 #ifndef __LVL_2_HPP
 #define __LVL_2_HPP
 
-#include <GameMap.hpp>
-#include <levels/IGameLevel.hpp>
-
 #include <SDL.h>
 
+#include <GameMap.hpp>
+#include <levels/IGameLevel.hpp>
 #include <map>
-#include <vector>
 #include <string>
+#include <vector>
 
 class IGameCharacter;
 class TransitionAnimation;
 class GameHandler;
 
-class Level2 : public IGameLevel
-{
+class Level2 : public IGameLevel {
 public:
     Level2(GameHandler& game_handler);
 

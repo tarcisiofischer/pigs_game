@@ -1,21 +1,19 @@
 #ifndef __LVL_ENTRY_HPP
 #define __LVL_ENTRY_HPP
 
-#include <GameMap.hpp>
-#include <levels/IGameLevel.hpp>
-
 #include <SDL.h>
 
+#include <GameMap.hpp>
+#include <levels/IGameLevel.hpp>
 #include <map>
-#include <vector>
 #include <string>
+#include <vector>
 
 class IGameCharacter;
 class TransitionAnimation;
 class GameHandler;
 
-class EntryLevel : public IGameLevel
-{
+class EntryLevel : public IGameLevel {
 public:
     EntryLevel(GameHandler& game_handler);
 

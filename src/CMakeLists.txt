@@ -5,7 +5,7 @@ find_package(SDL2_ttf REQUIRED)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(SOURCE_FILES
-    main.cc
+    main.cpp
 
     bitmap_font.hpp
     constants.hpp

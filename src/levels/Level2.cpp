@@ -1,13 +1,11 @@
-#include <levels/EntryLevel.hpp>
-#include <levels/Level2.hpp>
-
-#include <characters/builder.hpp>
+#include <GameHandler.hpp>
+#include <TransitionAnimation.hpp>
 #include <characters/IGameCharacter.hpp>
 #include <characters/King.hpp>
-
-#include <TransitionAnimation.hpp>
+#include <characters/builder.hpp>
 #include <io.hpp>
-#include <GameHandler.hpp>
+#include <levels/EntryLevel.hpp>
+#include <levels/Level2.hpp>
 
 Level2::Level2(GameHandler& game_handler)
     : map(load_map("maps/level2.map"))
@@ -35,9 +33,8 @@ std::function<void()> Level2::get_collision_callback(int callback_collision_id, 
             return [&game_handler]() {
                 auto& transition = game_handler.get_transition_animation();
                 if (transition.current_state() == TransitionAnimationState::finished) {
-                    transition.register_transition_callback([&](){
-                        game_handler.set_active_level(std::make_unique<EntryLevel>(game_handler));
-                    });
+                    transition.register_transition_callback(
+                        [&]() { game_handler.set_active_level(std::make_unique<EntryLevel>(game_handler)); });
                     transition.reset();
                 }
             };

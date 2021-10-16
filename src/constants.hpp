@@ -12,4 +12,3 @@ auto constexpr SCREEN_HEIGHT = 300 * SCALE_SIZE;
 auto constexpr gravity = -0.001;
 
 #endif
-

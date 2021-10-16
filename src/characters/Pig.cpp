@@ -1,11 +1,11 @@
-#include <characters/Pig.hpp>
 #include <AssetsRegistry.hpp>
+#include <characters/Pig.hpp>
 
 Pig::Pig(SDL_Renderer* renderer, double pos_x, double pos_y)
     : running_side(0)
-    , position{pos_x, pos_y}
-    , old_position{pos_x, pos_y}
-    , velocity{0.0, 0.0}
+    , position { pos_x, pos_y }
+    , old_position { pos_x, pos_y }
+    , velocity { 0.0, 0.0 }
     , renderer(renderer)
     , spritesheet(load_media("assets/sprites/pig80x80.png", renderer))
     , think_timeout(1000.)
@@ -17,95 +17,79 @@ Pig::Pig(SDL_Renderer* renderer, double pos_x, double pos_y)
     , is_angry(false)
     , is_fear(false)
     , talking_message("")
-    , talk_color{0, 0, 0}
+    , talk_color { 0, 0, 0 }
 {
     auto register_animation = [&](int id, std::vector<std::tuple<int, int>> const& frames, double time) {
         this->animations.insert(std::make_pair(id, Animation(this->spritesheet, frames, 80, 80, time)));
     };
-    
-    register_animation(
-        Pig::IDLE_ANIMATION, 
+
+    register_animation(Pig::IDLE_ANIMATION,
         {
-            {0, 1},
-            {1, 1},
-            {2, 1},
-            {3, 1},
-            {4, 1},
+            { 0, 1 },
+            { 1, 1 },
+            { 2, 1 },
+            { 3, 1 },
+            { 4, 1 },
         },
-        100.
-    );
-    register_animation(
-        Pig::RUNNING_ANIMATION,
+        100.);
+    register_animation(Pig::RUNNING_ANIMATION,
         {
-            {5, 1},
-            {0, 2},
-            {1, 2},
-            {2, 2},
-            {3, 2},
-            {4, 2},
+            { 5, 1 },
+            { 0, 2 },
+            { 1, 2 },
+            { 2, 2 },
+            { 3, 2 },
+            { 4, 2 },
         },
-        100.
-    );
-    register_animation(
-        Pig::TAKING_DAMAGE_ANIMATION,
+        100.);
+    register_animation(Pig::TAKING_DAMAGE_ANIMATION,
         {
-            {1, 4},
-            {2, 4},
-            {1, 4},
-            {2, 4},
+            { 1, 4 },
+            { 2, 4 },
+            { 1, 4 },
+            { 2, 4 },
         },
-        100.
-    );
-    register_animation(
-        Pig::DYING_ANIMATION,
+        100.);
+    register_animation(Pig::DYING_ANIMATION,
         {
-            {3, 4},
-            {4, 4},
-            {5, 4},
-            {0, 5},
+            { 3, 4 },
+            { 4, 4 },
+            { 5, 4 },
+            { 0, 5 },
         },
-        100.
-    );
-    register_animation(
-        Pig::TALKING_ANIMATION,
+        100.);
+    register_animation(Pig::TALKING_ANIMATION,
         {
-            {1, 5},
-            {2, 5},
-            {3, 5},
-            {4, 5},
-            {5, 5},
-            {0, 6},
-            {1, 6},
+            { 1, 5 },
+            { 2, 5 },
+            { 3, 5 },
+            { 4, 5 },
+            { 5, 5 },
+            { 0, 6 },
+            { 1, 6 },
         },
-        100.
-    );
-    register_animation(
-        Pig::ANGRY_ANIMATION,
+        100.);
+    register_animation(Pig::ANGRY_ANIMATION,
         {
-            {5, 6},
-            {0, 7},
+            { 5, 6 },
+            { 0, 7 },
         },
-        100.
-    );
-    register_animation(
-        Pig::ANGRY_TALKING_ANIMATION,
+        100.);
+    register_animation(Pig::ANGRY_TALKING_ANIMATION,
         {
-            {1, 7},
-            {2, 7},
-            {3, 7},
-            {4, 7},
-            {5, 7},
+            { 1, 7 },
+            { 2, 7 },
+            { 3, 7 },
+            { 4, 7 },
+            { 5, 7 },
         },
-        100.
-    );
-    register_animation(
-        Pig::FEAR_ANIMATION,
+        100.);
+    register_animation(Pig::FEAR_ANIMATION,
         {
-            {0, 8},
-            {1, 8},
+            { 0, 8 },
+            { 1, 8 },
         },
-        100.
-    );
+        100.);
 
     this->connect_callbacks();
 }
@@ -114,7 +98,8 @@ Pig::Pig(Pig const& other)
 {
     this->running_side = other.running_side;
 
-    // Force callbacks re-connection, so that the lambda functions are up-to-date in relation to the lambda captures
+    // Force callbacks re-connection, so that the lambda functions are up-to-date
+    // in relation to the lambda captures
     this->animations = other.animations;
     this->connect_callbacks();
 
@@ -134,7 +119,9 @@ Pig::Pig(Pig const& other)
     this->is_fear = other.is_fear;
 }
 
-Pig::~Pig() {}
+Pig::~Pig()
+{
+}
 
 void Pig::set_position(double x, double y)
 {
@@ -168,9 +155,13 @@ CollisionRegionInformation Pig::get_collision_region_information() const
     return CollisionRegionInformation(this->position, this->old_position, this->collision_size);
 }
 
-void Pig::handle_collision(CollisionType const& type, CollisionSide const& side) {}
+void Pig::handle_collision(CollisionType const& type, CollisionSide const& side)
+{
+}
 
-void Pig::on_after_collision() {}
+void Pig::on_after_collision()
+{
+}
 
 void Pig::update(double elapsedTime)
 {
@@ -181,9 +172,12 @@ void Pig::update(double elapsedTime)
         this->running_side = 0;
     }
 
-    if (this->running_side == +1) this->velocity.x = +0.05;
-    else if (this->running_side == -1) this->velocity.x = -0.05;
-    else this->velocity.x = 0.0;
+    if (this->running_side == +1)
+        this->velocity.x = +0.05;
+    else if (this->running_side == -1)
+        this->velocity.x = -0.05;
+    else
+        this->velocity.x = 0.0;
     this->velocity.y = velocity.y + gravity * elapsedTime;
 
     // Position setup
@@ -230,24 +224,15 @@ void Pig::run_animation(double elapsed_time)
         }
         return IDLE_ANIMATION;
     })();
-    this->animations.at(current_animation).run(
-        this->renderer,
-        elapsed_time,
-        -this->face,
-        Vector2D<int>{int(this->position.x), int(this->position.y)},
-        this->spritesheet_offset,
-        camera_offset
-    );
+    this->animations.at(current_animation)
+        .run(this->renderer, elapsed_time, -this->face, Vector2D<int> { int(this->position.x), int(this->position.y) },
+            this->spritesheet_offset, camera_offset);
     if (this->is_talking) {
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         auto player_world_position = this->get_position().as_int();
-        auto player_camera_position = to_camera_position(
-            player_world_position + Vector2D<int>{10, 40},
-            {0, 0},
-            camera_offset
-        );
+        auto player_camera_position = to_camera_position(player_world_position + Vector2D<int> { 10, 40 }, { 0, 0 }, camera_offset);
         // Talking area
-        auto rect = to_sdl_rect(Region2D<int>{
+        auto rect = to_sdl_rect(Region2D<int> {
             player_camera_position.x - 5 * SCALE_SIZE,
             player_camera_position.y - 5 * SCALE_SIZE,
             (5 + int(this->talking_message.size()) * 6 + 5) * SCALE_SIZE,
@@ -256,58 +241,52 @@ void Pig::run_animation(double elapsed_time)
         SDL_RenderFillRect(renderer, &rect);
 
         {
-            auto srcrect = SDL_Rect{0, 0, 5, 4};
-            auto dstrect = SDL_Rect{rect.x - 5 * SCALE_SIZE, rect.y - 4 * SCALE_SIZE, 5 * SCALE_SIZE, 4 * SCALE_SIZE};
+            auto srcrect = SDL_Rect { 0, 0, 5, 4 };
+            auto dstrect = SDL_Rect { rect.x - 5 * SCALE_SIZE, rect.y - 4 * SCALE_SIZE, 5 * SCALE_SIZE, 4 * SCALE_SIZE };
             SDL_RenderCopy(renderer, assets_registry.talk_baloon, &srcrect, &dstrect);
         }
         {
-            auto srcrect = SDL_Rect{20, 4, 1, 4};
-            auto dstrect = SDL_Rect{rect.x, rect.y - 4 * SCALE_SIZE, rect.w, 5 * SCALE_SIZE};
+            auto srcrect = SDL_Rect { 20, 4, 1, 4 };
+            auto dstrect = SDL_Rect { rect.x, rect.y - 4 * SCALE_SIZE, rect.w, 5 * SCALE_SIZE };
             SDL_RenderCopy(renderer, assets_registry.talk_baloon, &srcrect, &dstrect);
         }
         {
-            auto srcrect = SDL_Rect{10, 0, 5, 4};
-            auto dstrect = SDL_Rect{rect.x + rect.w, rect.y - 4 * SCALE_SIZE, 5 * SCALE_SIZE, 4 * SCALE_SIZE};
+            auto srcrect = SDL_Rect { 10, 0, 5, 4 };
+            auto dstrect = SDL_Rect { rect.x + rect.w, rect.y - 4 * SCALE_SIZE, 5 * SCALE_SIZE, 4 * SCALE_SIZE };
             SDL_RenderCopy(renderer, assets_registry.talk_baloon, &srcrect, &dstrect);
         }
         {
-            auto srcrect = SDL_Rect{25, 0, 5, 1};
-            auto dstrect = SDL_Rect{rect.x + rect.w, rect.y, 5 * SCALE_SIZE, rect.h};
+            auto srcrect = SDL_Rect { 25, 0, 5, 1 };
+            auto dstrect = SDL_Rect { rect.x + rect.w, rect.y, 5 * SCALE_SIZE, rect.h };
             SDL_RenderCopy(renderer, assets_registry.talk_baloon, &srcrect, &dstrect);
         }
         {
-            auto srcrect = SDL_Rect{15, 0, 5, 4};
-            auto dstrect = SDL_Rect{rect.x + rect.w, rect.y + rect.h, 5 * SCALE_SIZE, 4 * SCALE_SIZE};
+            auto srcrect = SDL_Rect { 15, 0, 5, 4 };
+            auto dstrect = SDL_Rect { rect.x + rect.w, rect.y + rect.h, 5 * SCALE_SIZE, 4 * SCALE_SIZE };
             SDL_RenderCopy(renderer, assets_registry.talk_baloon, &srcrect, &dstrect);
         }
         {
-            auto srcrect = SDL_Rect{20, 0, 1, 4};
-            auto dstrect = SDL_Rect{rect.x, rect.y + rect.h, rect.w, 4 * SCALE_SIZE};
+            auto srcrect = SDL_Rect { 20, 0, 1, 4 };
+            auto dstrect = SDL_Rect { rect.x, rect.y + rect.h, rect.w, 4 * SCALE_SIZE };
             SDL_RenderCopy(renderer, assets_registry.talk_baloon, &srcrect, &dstrect);
         }
         {
-            auto srcrect = SDL_Rect{5, 0, 5, 4};
-            auto dstrect = SDL_Rect{rect.x - 5 * SCALE_SIZE, rect.y + rect.h, 5 * SCALE_SIZE, 4 * SCALE_SIZE};
+            auto srcrect = SDL_Rect { 5, 0, 5, 4 };
+            auto dstrect = SDL_Rect { rect.x - 5 * SCALE_SIZE, rect.y + rect.h, 5 * SCALE_SIZE, 4 * SCALE_SIZE };
             SDL_RenderCopy(renderer, assets_registry.talk_baloon, &srcrect, &dstrect);
         }
         {
-            auto srcrect = SDL_Rect{25, 4, 5, 1};
-            auto dstrect = SDL_Rect{rect.x - 5 * SCALE_SIZE, rect.y, 5 * SCALE_SIZE, rect.h};
+            auto srcrect = SDL_Rect { 25, 4, 5, 1 };
+            auto dstrect = SDL_Rect { rect.x - 5 * SCALE_SIZE, rect.y, 5 * SCALE_SIZE, rect.h };
             SDL_RenderCopy(renderer, assets_registry.talk_baloon, &srcrect, &dstrect);
         }
         {
-            auto srcrect = SDL_Rect{0, 4, 5, 4};
-            auto dstrect = SDL_Rect{rect.x + 15 * SCALE_SIZE, rect.y + rect.h + 3 * SCALE_SIZE, 5 * SCALE_SIZE, 4 * SCALE_SIZE};
+            auto srcrect = SDL_Rect { 0, 4, 5, 4 };
+            auto dstrect = SDL_Rect { rect.x + 15 * SCALE_SIZE, rect.y + rect.h + 3 * SCALE_SIZE, 5 * SCALE_SIZE, 4 * SCALE_SIZE };
             SDL_RenderCopy(renderer, assets_registry.talk_baloon, &srcrect, &dstrect);
         }
 
-        gout(
-            this->renderer,
-            assets_registry.monogram,
-            player_camera_position,
-            this->talking_message,
-            this->talk_color
-        );
+        gout(this->renderer, assets_registry.monogram, player_camera_position, this->talking_message, this->talk_color);
     }
 }
 
@@ -359,18 +338,18 @@ void Pig::think(double elapsed_time)
         this->think_timeout -= elapsed_time;
         if (this->think_timeout <= 0.) {
             switch (random_int(0, 2)) {
-                case 0: {
-                    this->run_left();
-                    break;
-                };
-                case 1: {
-                    this->stop();
-                    break;
-                };
-                case 2: {
-                    this->run_right();
-                    break;
-                };
+            case 0: {
+                this->run_left();
+                break;
+            };
+            case 1: {
+                this->stop();
+                break;
+            };
+            case 2: {
+                this->run_right();
+                break;
+            };
             }
             this->think_timeout = 1000.;
         }
@@ -396,16 +375,15 @@ void Pig::connect_callbacks()
             this->is_dying = true;
         }
     });
-    this->animations.at(DYING_ANIMATION).set_on_finish_animation_callback([this]() {
-        this->is_dead = true;
-    });
+    this->animations.at(DYING_ANIMATION).set_on_finish_animation_callback([this]() { this->is_dead = true; });
 }
 
 Pig& Pig::operator=(Pig const& other)
 {
     this->running_side = other.running_side;
 
-    // Force callbacks re-connection, so that the lambda functions are up-to-date in relation to the lambda captures
+    // Force callbacks re-connection, so that the lambda functions are up-to-date
+    // in relation to the lambda captures
     this->animations = other.animations;
     this->connect_callbacks();
 

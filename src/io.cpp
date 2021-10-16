@@ -6,9 +6,7 @@ void save_map(GameMap const& map, std::string const& filename)
     if (!mapfile.is_open()) {
         throw std::runtime_error("Could not open file to write");
     }
-    auto bin_write = [&mapfile](int const& data) {
-        mapfile.write(reinterpret_cast<const char*>(&data), sizeof(int));
-    };
+    auto bin_write = [&mapfile](int const& data) { mapfile.write(reinterpret_cast<const char*>(&data), sizeof(int)); };
 
     bin_write(map.width);
     bin_write(map.height);
@@ -39,11 +37,9 @@ GameMap load_map(std::string const& filename)
         throw std::runtime_error("Could not open file to read");
     }
 
-    auto bin_read_nextint = [&mapfile](int &target) {
-        mapfile.read(reinterpret_cast<char*>(&target), sizeof(int));
-    };
+    auto bin_read_nextint = [&mapfile](int& target) { mapfile.read(reinterpret_cast<char*>(&target), sizeof(int)); };
 
-    auto map = GameMap{0, 0};
+    auto map = GameMap { 0, 0 };
 
     bin_read_nextint(map.width);
     bin_read_nextint(map.height);
@@ -73,7 +69,7 @@ GameMap load_map(std::string const& filename)
         bin_read_nextint(position_y);
         bin_read_nextint(id);
         bin_read_nextint(flip);
-        map.interactables.push_back({{position_x, position_y}, id, flip});
+        map.interactables.push_back({ { position_x, position_y }, id, flip });
     }
 
     mapfile.close();

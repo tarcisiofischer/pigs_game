@@ -1,11 +1,10 @@
 #ifndef __PIG_HPP
 #define __PIG_HPP
 
-#include <characters/IGameCharacter.hpp>
-#include <SceneScript.hpp>
 #include <Animation.hpp>
+#include <SceneScript.hpp>
 #include <Vector2D.hpp>
-
+#include <characters/IGameCharacter.hpp>
 #include <random.hpp>
 #include <sdl_wrappers.hpp>
 
@@ -23,15 +22,15 @@ public:
     static auto constexpr ANGRY_TALKING_ANIMATION = 6;
     static auto constexpr FEAR_ANIMATION = 7;
 
-    static auto constexpr collision_size = Vector2D<int>{18, 18};
-    static auto constexpr spritesheet_offset = Vector2D<int>{31, 33};
+    static auto constexpr collision_size = Vector2D<int> { 18, 18 };
+    static auto constexpr spritesheet_offset = Vector2D<int> { 31, 33 };
 
     Pig(SDL_Renderer* renderer, double pos_x, double pos_y);
     Pig(Pig const& other);
 
     Pig& operator=(Pig const& other);
 
-    virtual ~Pig(); 
+    virtual ~Pig();
 
     void set_script(SceneScript&& s);
     void set_position(double x, double y) override;

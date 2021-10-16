@@ -5,12 +5,14 @@
 
 inline bool check_aabb_collision(Region2D<double> const& a, Region2D<double> const& b)
 {
+    /* clang-format off */
     return (
         a.x       < b.x + b.w &&
         a.x + a.w > b.x       &&
         a.y       < b.y + b.h &&
         a.y + a.h > b.y
     );
+    /* clang-format on */
 }
 
 #endif

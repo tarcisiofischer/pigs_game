@@ -2,6 +2,7 @@
 #define __GAME_CONTROLLER_HPP
 
 #include <SDL.h>
+
 #include <map>
 
 enum class ControllerAction {

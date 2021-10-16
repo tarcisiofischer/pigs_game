@@ -1,8 +1,8 @@
 #ifndef __IGAMELEVEL_HPP
 #define __IGAMELEVEL_HPP
 
-#include <characters/IGameCharacter.hpp>
 #include <GameMap.hpp>
+#include <characters/IGameCharacter.hpp>
 #include <functional>
 #include <vector>
 

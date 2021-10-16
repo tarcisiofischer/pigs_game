@@ -1,20 +1,19 @@
 #ifndef __SCENE_SCRIPT
 #define __SCENE_SCRIPT
 
-#include <characters/IGameCharacter.hpp>
 #include <GameController.hpp>
-#include <vector>
-#include <tuple>
-#include <memory>
+#include <characters/IGameCharacter.hpp>
 #include <functional>
+#include <memory>
+#include <tuple>
+#include <vector>
 
 auto constexpr SceneScriptLinePropertyId = 1;
 
 class SceneScript;
 class IGameCharacter;
 
-class AbstractSceneHandler
-{
+class AbstractSceneHandler {
 public:
     AbstractSceneHandler();
 
@@ -25,8 +24,7 @@ protected:
     bool finished;
 };
 
-class WaitTime : public AbstractSceneHandler
-{
+class WaitTime : public AbstractSceneHandler {
 public:
     WaitTime(double desired_time);
     void run(IGameCharacter* c, SceneScript* script, double elapsed_time);
@@ -36,9 +34,7 @@ private:
     double current_time;
 };
 
-
-class WalkTo : public AbstractSceneHandler
-{
+class WalkTo : public AbstractSceneHandler {
 public:
     WalkTo(int desired_position_x);
     void run(IGameCharacter* c, SceneScript* script, double elapsed_time);
@@ -47,8 +43,7 @@ private:
     int desired_position_x;
 };
 
-class SetAngry : public AbstractSceneHandler
-{
+class SetAngry : public AbstractSceneHandler {
 public:
     SetAngry(bool is_angry);
     void run(IGameCharacter* c, SceneScript* script, double elapsed_time);
@@ -57,8 +52,7 @@ private:
     bool is_angry;
 };
 
-class SetFear : public AbstractSceneHandler
-{
+class SetFear : public AbstractSceneHandler {
 public:
     SetFear(bool fear);
     void run(IGameCharacter* c, SceneScript* script, double elapsed_time);
@@ -67,8 +61,7 @@ private:
     bool is_fear;
 };
 
-class FaceTo : public AbstractSceneHandler
-{
+class FaceTo : public AbstractSceneHandler {
 public:
     FaceTo(int desired_face);
     void run(IGameCharacter* c, SceneScript* script, double elapsed_time);
@@ -77,8 +70,7 @@ private:
     int desired_face;
 };
 
-class Talk : public AbstractSceneHandler
-{
+class Talk : public AbstractSceneHandler {
 public:
     enum class TalkState {
         NotStarted = 0,
@@ -95,8 +87,7 @@ private:
     TalkState state;
 };
 
-class WaitScriptEvent : public AbstractSceneHandler
-{
+class WaitScriptEvent : public AbstractSceneHandler {
 public:
     WaitScriptEvent(IGameCharacter* other_character, int line_number);
     void run(IGameCharacter* c, SceneScript* script, double elapsed_time);
@@ -106,11 +97,11 @@ private:
     int line_number;
 };
 
-class RunLambdaEvent : public AbstractSceneHandler
-{
+class RunLambdaEvent : public AbstractSceneHandler {
 public:
     RunLambdaEvent(std::function<void()> const& lambda_f);
     void run(IGameCharacter* c, SceneScript* script, double elapsed_time);
+
 private:
     std::function<void()> lambda_f;
 };

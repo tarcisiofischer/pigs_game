@@ -1,10 +1,8 @@
-#include <characters/builder.hpp>
-
 #include <GameMap.hpp>
-
 #include <characters/IGameCharacter.hpp>
 #include <characters/King.hpp>
 #include <characters/Pig.hpp>
+#include <characters/builder.hpp>
 
 std::vector<IGameCharacter*> build_game_characters(SDL_Renderer* renderer, GameMap const& map)
 {

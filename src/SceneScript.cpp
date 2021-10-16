@@ -1,13 +1,14 @@
 #include <SceneScript.hpp>
 #include <characters/Pig.hpp>
-
 #include <iostream>
 
 AbstractSceneHandler::AbstractSceneHandler()
     : finished(false)
-{}
+{
+}
 
-bool AbstractSceneHandler::is_finished() {
+bool AbstractSceneHandler::is_finished()
+{
     return this->finished;
 }
 
@@ -15,7 +16,8 @@ WaitTime::WaitTime(double desired_time)
     : AbstractSceneHandler()
     , desired_time(desired_time)
     , current_time(0.0)
-{}
+{
+}
 
 void WaitTime::run(IGameCharacter* c, SceneScript* script, double elapsed_time)
 {
@@ -25,11 +27,11 @@ void WaitTime::run(IGameCharacter* c, SceneScript* script, double elapsed_time)
     }
 }
 
-
 WalkTo::WalkTo(int desired_position_x)
     : AbstractSceneHandler()
     , desired_position_x(desired_position_x)
-{}
+{
+}
 
 void WalkTo::run(IGameCharacter* c, SceneScript* script, double elapsed_time)
 {
@@ -49,7 +51,8 @@ void WalkTo::run(IGameCharacter* c, SceneScript* script, double elapsed_time)
 FaceTo::FaceTo(int desired_face)
     : AbstractSceneHandler()
     , desired_face(desired_face)
-{}
+{
+}
 
 void FaceTo::run(IGameCharacter* c, SceneScript* script, double elapsed_time)
 {
@@ -63,7 +66,8 @@ Talk::Talk(std::string const& message, RGBColor const& talk_color)
     , message(message)
     , talk_color(talk_color)
     , state(TalkState::NotStarted)
-{}
+{
+}
 
 void Talk::run(IGameCharacter* c, SceneScript* script, double elapsed_time)
 {
@@ -86,7 +90,8 @@ WaitScriptEvent::WaitScriptEvent(IGameCharacter* c, int line_number)
     : AbstractSceneHandler()
     , other_character(c)
     , line_number(line_number)
-{}
+{
+}
 
 void WaitScriptEvent::run(IGameCharacter* c, SceneScript* script, double elapsed_time)
 {
@@ -100,7 +105,7 @@ SetAngry::SetAngry(bool is_angry)
     : AbstractSceneHandler()
     , is_angry(is_angry)
 {
-    }
+}
 
 void SetAngry::run(IGameCharacter* c, SceneScript* script, double elapsed_time)
 {
@@ -124,14 +129,14 @@ void SetFear::run(IGameCharacter* c, SceneScript* script, double elapsed_time)
 
 RunLambdaEvent::RunLambdaEvent(std::function<void()> const& lambda_f)
     : lambda_f(lambda_f)
-{}
+{
+}
 
 void RunLambdaEvent::run(IGameCharacter* c, SceneScript* script, double elapsed_time)
 {
     this->lambda_f();
     this->finished = true;
 }
-
 
 SceneScript::SceneScript(std::vector<ScriptLine> const& script)
     : full_script(std::move(script))

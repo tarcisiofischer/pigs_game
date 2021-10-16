@@ -1,15 +1,12 @@
 #ifndef __CANNON_HPP
 #define __CANNON_HPP
 
-#include <characters/IGameCharacter.hpp>
-
 #include <Animation.hpp>
 #include <Vector2D.hpp>
-
+#include <characters/IGameCharacter.hpp>
 #include <sdl_wrappers.hpp>
-
-#include <vector>
 #include <tuple>
+#include <vector>
 
 class Cannon : public IGameCharacter {
 public:
@@ -18,9 +15,9 @@ public:
 
     static auto constexpr collision_offset_x = 35.;
     static auto constexpr collision_offset_y = 43.;
-    static auto constexpr collision_size = Vector2D<int>{24, 21};
-    
-    static auto constexpr spritesheet_offset = Vector2D<int>{37, 32};
+    static auto constexpr collision_size = Vector2D<int> { 24, 21 };
+
+    static auto constexpr spritesheet_offset = Vector2D<int> { 37, 32 };
 
     Cannon(SDL_Renderer* renderer, double pos_x, double pos_y, int face);
     void set_on_before_fire(std::function<void()> const& f);

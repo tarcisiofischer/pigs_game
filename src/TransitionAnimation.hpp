@@ -5,10 +5,9 @@
 #include <SDL_image.h>
 #include <SDL_ttf.h>
 
+#include <constants.hpp>
 #include <functional>
 #include <optional>
-
-#include <constants.hpp>
 
 enum class TransitionAnimationState {
     blacking = 0,
@@ -17,8 +16,7 @@ enum class TransitionAnimationState {
     finished = 3
 };
 
-class TransitionAnimation
-{
+class TransitionAnimation {
 public:
     TransitionAnimation();
     void reset();

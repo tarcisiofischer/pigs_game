@@ -4,7 +4,7 @@ extern Vector2D<int> camera_offset;
 
 Cannon::Cannon(SDL_Renderer* renderer, double pos_x, double pos_y, int face)
     : face(face)
-    , position{pos_x, pos_y}
+    , position { pos_x, pos_y }
     , is_attacking(false)
     , renderer(renderer)
     , spritesheet(load_media("assets/sprites/cannon96x96.png", renderer))
@@ -12,24 +12,20 @@ Cannon::Cannon(SDL_Renderer* renderer, double pos_x, double pos_y, int face)
     auto register_animation = [&](int id, std::vector<std::tuple<int, int>> const& frames, double time) {
         this->animations.insert(std::make_pair(id, Animation(this->spritesheet, frames, 96, 96, time)));
     };
-    
-    register_animation(
-        Cannon::IDLE_ANIMATION, 
+
+    register_animation(Cannon::IDLE_ANIMATION,
         {
-            {0, 0},
+            { 0, 0 },
         },
-        100.
-    );
-    register_animation(
-        Cannon::ATTACKING_ANIMATION,
+        100.);
+    register_animation(Cannon::ATTACKING_ANIMATION,
         {
-            {1, 0},
-            {2, 0},
-            {3, 0},
-            {4, 0},
+            { 1, 0 },
+            { 2, 0 },
+            { 3, 0 },
+            { 4, 0 },
         },
-        100.
-    );
+        100.);
 }
 
 void Cannon::set_on_before_fire(std::function<void()> const& f)
@@ -52,7 +48,7 @@ Vector2D<double> Cannon::get_position() const
 
 Vector2D<double> Cannon::get_velocity() const
 {
-    return {0.0, 0.0};
+    return { 0.0, 0.0 };
 }
 
 void Cannon::set_velocity(double x, double y)
@@ -64,9 +60,13 @@ CollisionRegionInformation Cannon::get_collision_region_information() const
     return CollisionRegionInformation(this->position, this->position, this->collision_size);
 }
 
-void Cannon::handle_collision(CollisionType const& type, CollisionSide const& side) {}
+void Cannon::handle_collision(CollisionType const& type, CollisionSide const& side)
+{
+}
 
-void Cannon::on_after_collision() {}
+void Cannon::on_after_collision()
+{
+}
 
 void Cannon::trigger_attack()
 {
@@ -90,12 +90,7 @@ void Cannon::run_animation(double elapsedTime)
         return IDLE_ANIMATION;
     })();
 
-    this->animations.at(current_animation).run(
-        this->renderer,
-        elapsedTime,
-        this->face,
-        Vector2D<int>{int(this->position.x), int(this->position.y)},
-        this->spritesheet_offset,
-        camera_offset
-    );
+    this->animations.at(current_animation)
+        .run(this->renderer, elapsedTime, this->face, Vector2D<int> { int(this->position.x), int(this->position.y) },
+            this->spritesheet_offset, camera_offset);
 }

@@ -6,14 +6,16 @@ StateTimeout::StateTimeout()
     , function()
     , current_time(0.0)
     , started(false)
-    {}
+{
+}
 
-StateTimeout::StateTimeout(double timeout, std::function<void()>  f)
+StateTimeout::StateTimeout(double timeout, std::function<void()> f)
     : timeout(timeout)
     , function(std::move(f))
     , current_time(0.0)
     , started(false)
-    {}
+{
+}
 
 void StateTimeout::restart()
 {
@@ -33,4 +35,3 @@ void StateTimeout::update(double elapsedTime)
         this->started = false;
     }
 }
-

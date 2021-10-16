@@ -2,12 +2,8 @@
 
 GameController::GameController()
 {
-    this->keyconfig = {
-        {ControllerAction::ActionKey, SDL_SCANCODE_LCTRL}
-    };
-    this->keystate = {
-        {ControllerAction::ActionKey, ControllerState::NotPressed}
-    };
+    this->keyconfig = { { ControllerAction::ActionKey, SDL_SCANCODE_LCTRL } };
+    this->keystate = { { ControllerAction::ActionKey, ControllerState::NotPressed } };
 }
 
 GameController::~GameController()

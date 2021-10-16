@@ -2,11 +2,11 @@
 #define __IO_H
 
 #include <GameMap.hpp>
-#include <vector>
-#include <string>
+#include <fstream>
 #include <iostream>
 #include <sstream>
-#include <fstream>
+#include <string>
+#include <vector>
 
 void save_map(GameMap const& map, std::string const& filename);
 

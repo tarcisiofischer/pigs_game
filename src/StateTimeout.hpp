@@ -5,8 +5,8 @@
 
 class StateTimeout {
 public:
-    StateTimeout();    
-    StateTimeout(double timeout, std::function<void()>  f);
+    StateTimeout();
+    StateTimeout(double timeout, std::function<void()> f);
 
     void restart();
     void update(double elapsedTime);

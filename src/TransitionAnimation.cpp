@@ -41,7 +41,7 @@ void TransitionAnimation::run(SDL_Renderer* renderer, double elapsedTime)
         }
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-        auto rect = SDL_Rect{0, 0, int(this->transition_width), SCREEN_HEIGHT};
+        auto rect = SDL_Rect { 0, 0, int(this->transition_width), SCREEN_HEIGHT };
         SDL_RenderFillRect(renderer, &rect);
     } else if (this->animation_state == TransitionAnimationState::waiting) {
         if (this->transition_callback) {
@@ -54,7 +54,7 @@ void TransitionAnimation::run(SDL_Renderer* renderer, double elapsedTime)
         }
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-        auto rect = SDL_Rect{0, 0, SCREEN_WIDTH, SCREEN_HEIGHT};
+        auto rect = SDL_Rect { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT };
         SDL_RenderFillRect(renderer, &rect);
     } else if (this->animation_state == TransitionAnimationState::clearing) {
         this->transition_velocity += this->transition_acceleration * elapsedTime;
@@ -66,9 +66,7 @@ void TransitionAnimation::run(SDL_Renderer* renderer, double elapsedTime)
         }
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-        auto rect = SDL_Rect{SCREEN_WIDTH - int(this->transition_width), 0, int(this->transition_width), SCREEN_HEIGHT};
+        auto rect = SDL_Rect { SCREEN_WIDTH - int(this->transition_width), 0, int(this->transition_width), SCREEN_HEIGHT };
         SDL_RenderFillRect(renderer, &rect);
     }
-
 }
-

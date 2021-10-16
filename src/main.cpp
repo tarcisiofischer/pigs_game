@@ -1,14 +1,14 @@
-#include <SDL.h>
-#include <levels/EntryLevel.hpp>
 #include <GameHandler.hpp>
+#include <SDL.h>
 #include <Vector2D.hpp>
 #include <constants.hpp>
-#include <sdl_wrappers.hpp>
-#include <optional>
+#include <levels/EntryLevel.hpp>
 #include <memory>
+#include <optional>
+#include <sdl_wrappers.hpp>
 
 // TODO PIG-12: Initialize the camera on main (avoid global)
-Vector2D<int> camera_offset{0, 0};
+Vector2D<int> camera_offset { 0, 0 };
 
 int main(int argc, char* args[])
 {
@@ -20,8 +20,7 @@ int main(int argc, char* args[])
         SDL_WINDOWPOS_UNDEFINED,
         SCREEN_WIDTH,
         SCREEN_HEIGHT,
-        SDL_WINDOW_SHOWN
-    );
+        SDL_WINDOW_SHOWN);
     if (window == nullptr) {
         throw std::runtime_error("SDL Error: Window could not be created");
     }
@@ -38,7 +37,7 @@ int main(int argc, char* args[])
     while (true) {
         last = current;
         current = SDL_GetPerformanceCounter();
-        double elapsed_time = (double)((current - last)*1000.0 / (double)SDL_GetPerformanceFrequency() );
+        double elapsed_time = (double)((current - last) * 1000.0 / (double)SDL_GetPerformanceFrequency());
         fps_countdown -= elapsed_time;
         fps_counter += 1;
         if (fps_countdown < 0.) {
@@ -59,4 +58,3 @@ int main(int argc, char* args[])
 
     return 0;
 }
-

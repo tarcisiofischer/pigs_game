@@ -1,17 +1,14 @@
 #ifndef __KING_HPP
 #define __KING_HPP
 
-#include <characters/IGameCharacter.hpp>
-
 #include <Animation.hpp>
-#include <Vector2D.hpp>
 #include <StateTimeout.hpp>
-
-#include <random.hpp>
-#include <sdl_wrappers.hpp>
-
+#include <Vector2D.hpp>
+#include <characters/IGameCharacter.hpp>
 #include <functional>
 #include <optional>
+#include <random.hpp>
+#include <sdl_wrappers.hpp>
 
 extern Vector2D<int> camera_offset;
 
@@ -27,15 +24,15 @@ public:
     static auto constexpr DYING_ANIMATION = 7;
     static auto constexpr DEAD_ANIMATION = 8;
 
-    static auto constexpr collision_size = Vector2D<int>{20, 27};
+    static auto constexpr collision_size = Vector2D<int> { 20, 27 };
 
     static auto constexpr attack_region_offset_x = 30.;
     static auto constexpr attack_region_offset_y = -10.;
     static auto constexpr attack_region_w = 10.;
     static auto constexpr attack_region_h = 20.;
 
-    static auto constexpr reference_point = Vector2D<int>{41, 30};
-    static auto constexpr spritesheet_offset = Vector2D<int>{38, 32};
+    static auto constexpr reference_point = Vector2D<int> { 41, 30 };
+    static auto constexpr spritesheet_offset = Vector2D<int> { 38, 32 };
 
 public:
     King(SDL_Renderer* renderer, double pos_x, double pos_y);

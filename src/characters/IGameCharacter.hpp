@@ -5,8 +5,7 @@
 #include <collision/CollisionRegion.hpp>
 #include <collision/enums.hpp>
 
-class IGameCharacter
-{
+class IGameCharacter {
 public:
     virtual void update(double elapsedTime) = 0;
     virtual void run_animation(double elapsedTime) = 0;
