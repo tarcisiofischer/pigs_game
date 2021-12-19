@@ -53,6 +53,8 @@ set(SOURCE_FILES
     GameController.hpp
     GameHandler.cpp
     GameHandler.hpp
+    GameTimeHandler.cpp
+    GameTimeHandler.hpp
     GameMap.cpp
     GameMap.hpp
     io.cpp

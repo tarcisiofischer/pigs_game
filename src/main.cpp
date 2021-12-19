@@ -1,4 +1,5 @@
 #include <GameHandler.hpp>
+#include <GameTimeHandler.hpp>
 #include <SDL.h>
 #include <Vector2D.hpp>
 #include <constants.hpp>
@@ -10,7 +11,7 @@
 // TODO PIG-12: Initialize the camera on main (avoid global)
 Vector2D<int> camera_offset { 0, 0 };
 
-int main(int argc, char* args[])
+int main()
 {
     initialize_sdl();
 
@@ -25,26 +26,13 @@ int main(int argc, char* args[])
         throw std::runtime_error("SDL Error: Window could not be created");
     }
 
+    auto time_handler = GameTimeHandler{};
     auto game_handler = GameHandler(window);
     game_handler.set_active_level(std::make_unique<EntryLevel>(game_handler));
 
-    auto last = (unsigned long long)(0);
-    auto current = SDL_GetPerformanceCounter();
-    auto fps_countdown = 1000.;
-    auto fps_counter = 0;
-    auto fps = 0;
-
     while (true) {
-        last = current;
-        current = SDL_GetPerformanceCounter();
-        double elapsed_time = (double)((current - last) * 1000.0 / (double)SDL_GetPerformanceFrequency());
-        fps_countdown -= elapsed_time;
-        fps_counter += 1;
-        if (fps_countdown < 0.) {
-            fps = fps_counter;
-            fps_counter = 0;
-            fps_countdown = 1000.;
-        }
+        time_handler.update();
+        auto elapsed_time = time_handler.get_elapsed_time();
 
         if (!game_handler.process_inputs()) {
             break;
