@@ -29,6 +29,11 @@ public:
         return { random_int(-1, 1), random_int(-1, 1) };
     }
 
+    void start_shake() {
+        this->is_shaking = true;
+        this->state.restart();
+    }
+
     void update(double elapsed_time)
     {
         this->state.update(elapsed_time);

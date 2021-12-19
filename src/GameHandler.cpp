@@ -23,22 +23,29 @@ void GameHandler::set_active_level(std::unique_ptr<IGameLevel>&& lvl)
 {
     this->active_lvl = std::move(lvl);
 
-    // if (player) {
-    //     player->register_on_dead_callback([&transition_animation]() {
-    //         transition_animation.reset();
-    //     });
-    //     player->on_start_taking_damage = [&window_is_shaking,
-    //     &window_shaker]()
-    //     {
-    //         window_is_shaking = true;
-    //         window_shaker.restart();
-    //     };
-    //     transition_animation.register_transition_callback([&player]() {
-    //         player->set_position(100.0, 100.0);
-    //         player->is_dead = false;
-    //         player->life = 2;
-    //     });
-    // }
+    auto player = this->player();
+    if (!player) {
+        return;
+    }
+
+    player->register_on_dead_callback([this]() {
+        this->transition_animation.reset();
+    });
+
+    player->on_start_taking_damage = [this]() {
+        this->window_shaker.start_shake();
+    };
+
+    transition_animation.register_transition_callback([this]() {
+        auto player = this->player();
+        if (!player) {
+            return;
+        }
+
+        player->set_position(100.0, 100.0);
+        player->life = 2;
+        player->is_dead = false;
+    });
 }
 
 SDL_Renderer* GameHandler::get_renderer()
