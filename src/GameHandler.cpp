@@ -6,6 +6,7 @@
 #include <collision/tilemap_collision.hpp>
 #include <constants.hpp>
 #include <drawing.hpp>
+#include <levels/EntryLevel.hpp>
 
 // TODO PIG-12: Initialize the camera on main (avoid global)
 extern Vector2D<int> camera_offset;
@@ -14,6 +15,18 @@ GameHandler::GameHandler(SDL_Window* window)
     : active_lvl(nullptr)
     , renderer(SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED))
     , enable_debug(false)
+    // TODO: Properly configure screen buttons
+    , screen{
+        // on new game
+        [this](){
+            this->set_active_level(std::make_unique<EntryLevel>(*this));
+        },
+        // on game exit
+        [this](){
+            this->game_finished = true;
+        }
+    }
+    , game_finished(false)
 {
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
     assets_registry.load(renderer);
@@ -53,13 +66,13 @@ SDL_Renderer* GameHandler::get_renderer()
     return this->renderer;
 }
 
-bool GameHandler::process_inputs()
+void GameHandler::process_inputs()
 {
     SDL_Event e;
     while (SDL_PollEvent(&e) != 0) {
         switch (e.type) {
         case SDL_QUIT: {
-            return false;
+            this->game_finished = true;
         }
         case SDL_KEYDOWN: {
             if (e.key.keysym.sym == SDLK_TAB && !e.key.repeat) {
@@ -71,12 +84,18 @@ bool GameHandler::process_inputs()
     }
 
     game_controller.update();
-    auto keystates = SDL_GetKeyboardState(NULL);
-    auto player = this->player();
-    if (player) {
-        player->handle_controller(keystates);
+
+    // TODO: Properly handle dynamic screens
+    if (this->active_lvl) {
+        // TODO: Use game controller instead of raw SDL
+        auto keystates = SDL_GetKeyboardState(NULL);
+        auto player = this->player();
+        if (player) {
+            player->handle_controller(keystates);
+        }
+    } else {
+        this->screen.handle_controller(game_controller);
     }
-    return true;
 }
 
 void GameHandler::update()
@@ -84,6 +103,7 @@ void GameHandler::update()
     this->time_handler.update();
 
     auto elapsed_time = this->time_handler.get_elapsed_time();
+    // TODO: Properly handle active screen
     if (this->active_lvl) {
         this->update_characters(elapsed_time);
         this->compute_collisions();

@@ -7,6 +7,8 @@
 
 enum class ControllerAction {
     ActionKey = 0,
+    UpKey = 1,
+    DownKey = 2
 };
 
 enum class ControllerState {
@@ -22,6 +24,7 @@ public:
 
     void update();
     ControllerState get_state(ControllerAction const& action) const;
+    bool just_pressed(ControllerAction const& action) const;
 
 private:
     std::map<ControllerAction, int> keyconfig;

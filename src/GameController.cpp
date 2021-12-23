@@ -2,8 +2,15 @@
 
 GameController::GameController()
 {
-    this->keyconfig = { { ControllerAction::ActionKey, SDL_SCANCODE_LCTRL } };
-    this->keystate = { { ControllerAction::ActionKey, ControllerState::NotPressed } };
+    this->keyconfig = {
+        { ControllerAction::ActionKey, SDL_SCANCODE_LCTRL },
+        { ControllerAction::UpKey, SDL_SCANCODE_UP },
+        { ControllerAction::DownKey, SDL_SCANCODE_DOWN }
+    };
+
+    for (auto const& [k, _] : this->keyconfig) {
+        this->keystate[k] = ControllerState::NotPressed;
+    }
 }
 
 GameController::~GameController()
@@ -13,22 +20,28 @@ GameController::~GameController()
 void GameController::update()
 {
     auto keystate = SDL_GetKeyboardState(nullptr);
-
-    auto const& sdl_key = this->keyconfig[ControllerAction::ActionKey];
-    if (keystate[sdl_key]) {
-        if (this->keystate[ControllerAction::ActionKey] == ControllerState::NotPressed) {
-            this->keystate[ControllerAction::ActionKey] = ControllerState::JustPressed;
+    for (auto const& [k, _] : this->keyconfig) {
+        auto const& sdl_key = this->keyconfig[k];
+        if (keystate[sdl_key]) {
+            if (this->keystate[k] == ControllerState::NotPressed) {
+                this->keystate[k] = ControllerState::JustPressed;
+            } else {
+                this->keystate[k] = ControllerState::Pressed;
+            }
         } else {
-            this->keystate[ControllerAction::ActionKey] = ControllerState::Pressed;
+            this->keystate[k] = ControllerState::NotPressed;
         }
-    } else {
-        this->keystate[ControllerAction::ActionKey] = ControllerState::NotPressed;
     }
 }
 
 ControllerState GameController::get_state(ControllerAction const& action) const
 {
     return this->keystate.at(action);
+}
+
+bool GameController::just_pressed(ControllerAction const& action) const
+{
+    return this->keystate.at(action) == ControllerState::JustPressed;
 }
 
 GameController game_controller;

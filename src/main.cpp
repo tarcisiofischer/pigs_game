@@ -6,6 +6,7 @@
 #include <memory>
 #include <optional>
 #include <sdl_wrappers.hpp>
+#include <iostream>
 
 // TODO PIG-12: Initialize the camera on main (avoid global)
 Vector2D<int> camera_offset { 0, 0 };
@@ -26,13 +27,13 @@ int main()
     }
 
     auto game_handler = GameHandler(window);
-//    game_handler.set_active_level(std::make_unique<EntryLevel>(game_handler));
 
     while (true) {
-        if (!game_handler.process_inputs()) {
+        game_handler.process_inputs();
+        game_handler.update();
+        if (game_handler.is_game_finished()) {
             break;
         }
-        game_handler.update();
         game_handler.render();
     }
 

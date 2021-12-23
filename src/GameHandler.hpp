@@ -52,7 +52,7 @@ public:
 
     void set_active_level(std::unique_ptr<IGameLevel>&& lvl);
 
-    bool process_inputs();
+    void process_inputs();
     void update();
     void render();
 
@@ -61,11 +61,15 @@ public:
     SDL_Renderer* get_renderer();
     TransitionAnimation& get_transition_animation();
 
+    inline bool is_game_finished() const
+    {
+        return this->game_finished;
+    }
+
 private:
     void update_characters(double elapsed_time);
     void compute_collisions();
     void render_lvl();
-    void render_main_screen();
 
 private:
     std::unique_ptr<IGameLevel> active_lvl;
@@ -77,6 +81,8 @@ private:
     bool enable_debug;
     std::vector<std::string> debug_messages;
     GameTimeHandler time_handler;
+
+    bool game_finished;
 
     // TODO: Make screen dynamic
     TitleScreen screen;
