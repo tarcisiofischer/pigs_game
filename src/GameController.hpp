@@ -6,15 +6,16 @@
 #include <map>
 
 enum class ControllerAction {
-    ActionKey = 0,
-    UpKey = 1,
-    DownKey = 2
+    ActionKey,
+    UpKey,
+    DownKey,
+    DebugKey
 };
 
 enum class ControllerState {
-    NotPressed = 0,
-    JustPressed = 1,
-    Pressed = 2,
+    NotPressed,
+    JustPressed,
+    Pressed
 };
 
 class GameController {

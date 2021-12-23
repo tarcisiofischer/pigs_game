@@ -26,7 +26,7 @@ public:
 
     void handle_controller(GameController const& keystates) override;
     void update(double elapsed_time) override;
-    void render(SDL_Renderer* renderer) const override;
+    void render(SDL_Renderer* renderer, double elapsed_time) override;
 
 private:
     bool logo_timeout_done;

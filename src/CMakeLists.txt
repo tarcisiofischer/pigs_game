@@ -75,6 +75,8 @@ set(SOURCE_FILES
     TransitionAnimation.cpp
     TransitionAnimation.hpp
     Vector2D.hpp
+    WindowShaker.cpp
+    WindowShaker.hpp
 )
 
 source_group(

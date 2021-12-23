@@ -3,6 +3,7 @@
 GameController::GameController()
 {
     this->keyconfig = {
+        { ControllerAction::DebugKey, SDL_SCANCODE_TAB },
         { ControllerAction::ActionKey, SDL_SCANCODE_LCTRL },
         { ControllerAction::UpKey, SDL_SCANCODE_UP },
         { ControllerAction::DownKey, SDL_SCANCODE_DOWN }

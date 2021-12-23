@@ -56,7 +56,7 @@ void TitleScreen::update(double elapsed_time)
     }
 }
 
-void TitleScreen::render(SDL_Renderer* renderer) const
+void TitleScreen::render(SDL_Renderer* renderer, double elapsed_time)
 {
     SDL_SetRenderDrawColor(renderer, 50, 50, 50, 255);
     SDL_RenderClear(renderer);

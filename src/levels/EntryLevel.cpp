@@ -6,6 +6,7 @@
 #include <io.hpp>
 #include <levels/EntryLevel.hpp>
 #include <levels/Level2.hpp>
+#include <screens/GameScreen.hpp>
 
 EntryLevel::EntryLevel(GameHandler& game_handler)
     : map(load_map("maps/entry_level.map"))
@@ -27,18 +28,19 @@ std::vector<IGameCharacter*>& EntryLevel::get_characters()
 std::function<void()> EntryLevel::get_collision_callback(int callback_collision_id, IGameCharacter* character)
 {
     if (callback_collision_id == 1) {
-        auto* player = dynamic_cast<King*>(character);
-        if (player) {
-            auto& game_handler = this->game_handler;
-            return [&game_handler]() {
-                auto& transition = game_handler.get_transition_animation();
-                if (transition.current_state() == TransitionAnimationState::finished) {
-                    transition.register_transition_callback(
-                        [&]() { game_handler.set_active_level(std::make_unique<Level2>(game_handler)); });
-                    transition.reset();
-                }
-            };
-        }
+        auto& game_handler = this->game_handler;
+        return [&game_handler]() {
+            auto& transition = game_handler.get_transition_animation();
+            if (transition.current_state() == TransitionAnimationState::finished) {
+                transition.register_transition_callback(
+                    [&]() {
+                        auto game_screen = dynamic_cast<GameScreen*>(game_handler.get_active_screen());
+                        game_screen->set_active_level(std::make_unique<Level2>(game_handler));
+                    }
+                );
+                transition.reset();
+            }
+        };
     }
     return nullptr;
 }
