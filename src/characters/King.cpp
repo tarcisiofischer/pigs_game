@@ -164,28 +164,31 @@ void King::on_after_collision()
     }
 }
 
-void King::handle_controller(const unsigned char* keystates)
+void King::handle_controller(GameController const& controller)
 {
-    // Player handling
-    if (!this->is_taking_damage && !this->is_dying && !this->is_dead) {
-        if (keystates[SDL_SCANCODE_LEFT]) {
-            this->running_side = -1;
-            this->face = -1;
-        } else if (keystates[SDL_SCANCODE_RIGHT]) {
-            this->running_side = +1;
-            this->face = +1;
-        } else {
-            this->running_side = 0;
+    if (this->is_taking_damage || this->is_dying || this->is_dead) {
+        return;
+    }
+
+    if (controller.is_pressed(ControllerAction::LeftKey)) {
+        this->running_side = -1;
+        this->face = -1;
+    } else if (controller.is_pressed(ControllerAction::RightKey)) {
+        this->running_side = +1;
+        this->face = +1;
+    } else {
+        this->running_side = 0;
+    }
+
+    if (controller.is_pressed(ControllerAction::UpKey)) {
+        if (!this->is_jumping && !this->is_falling) {
+            this->start_jumping = true;
         }
-        if (keystates[SDL_SCANCODE_UP]) {
-            if (!this->is_jumping && !this->is_falling) {
-                this->start_jumping = true;
-            }
-        }
-        if (keystates[SDL_SCANCODE_LCTRL]) {
-            if (!this->is_attacking) {
-                this->is_attacking = true;
-            }
+    }
+
+    if (controller.is_pressed(ControllerAction::ActionKey)) {
+        if (!this->is_attacking) {
+            this->is_attacking = true;
         }
     }
 }

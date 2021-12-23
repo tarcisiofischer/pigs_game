@@ -10,13 +10,11 @@ GameScreen::GameScreen(GameHandler& game_handler)
     , enable_debug(false)
 {}
 
-void GameScreen::handle_controller(const GameController &controller)
+void GameScreen::handle_controller(GameController const& controller)
 {
-    // TODO: Use game controller instead of raw SDL
-    auto keystates = SDL_GetKeyboardState(NULL);
     auto player = this->player();
     if (player) {
-        player->handle_controller(keystates);
+        player->handle_controller(controller);
     }
 
     if (controller.just_pressed(ControllerAction::DebugKey)) {

@@ -9,6 +9,7 @@
 #include <optional>
 #include <random.hpp>
 #include <sdl_wrappers.hpp>
+#include <GameController.hpp>
 
 extern Vector2D<int> camera_offset;
 
@@ -43,7 +44,7 @@ public:
     CollisionRegionInformation get_collision_region_information() const override;
     void handle_collision(CollisionType const& type, CollisionSide const& side) override;
     void on_after_collision() override;
-    void handle_controller(const unsigned char* keystates);
+    void handle_controller(GameController const& controller);
     void register_on_dead_callback(std::function<void()> const& f);
     void update(double elapsedTime) override;
     void start_taking_damage();

@@ -6,7 +6,9 @@ GameController::GameController()
         { ControllerAction::DebugKey, SDL_SCANCODE_TAB },
         { ControllerAction::ActionKey, SDL_SCANCODE_LCTRL },
         { ControllerAction::UpKey, SDL_SCANCODE_UP },
-        { ControllerAction::DownKey, SDL_SCANCODE_DOWN }
+        { ControllerAction::DownKey, SDL_SCANCODE_DOWN },
+        { ControllerAction::LeftKey, SDL_SCANCODE_LEFT },
+        { ControllerAction::RightKey, SDL_SCANCODE_RIGHT }
     };
 
     for (auto const& [k, _] : this->keyconfig) {
@@ -43,6 +45,11 @@ ControllerState GameController::get_state(ControllerAction const& action) const
 bool GameController::just_pressed(ControllerAction const& action) const
 {
     return this->keystate.at(action) == ControllerState::JustPressed;
+}
+
+bool GameController::is_pressed(ControllerAction const& action) const
+{
+    return this->keystate.at(action) == ControllerState::Pressed;
 }
 
 GameController game_controller;
