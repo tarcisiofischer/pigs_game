@@ -96,9 +96,6 @@ void GameScreen::render(SDL_Renderer* renderer, double elapsed_time)
     for (auto& game_character : game_characters) {
         game_character->run_animation(elapsed_time);
     }
-    // TODO PIG-13: Move this to somewhere else; Should only exist when
-    // transition is active.
-    this->game_handler.get_transition_animation().run(renderer, elapsed_time);
 
     if (this->enable_debug) {
         int mousex = 0;
@@ -167,23 +164,20 @@ void GameScreen::set_active_level(std::unique_ptr<IGameLevel>&& lvl)
     }
 
     player->register_on_dead_callback([this]() {
-        this->game_handler.get_transition_animation().reset();
+        auto& transition_animation = this->game_handler.get_transition_animation();
+        transition_animation.register_transition_callback([this]() {
+            auto player = this->player();
+            player->set_position(100.0, 100.0);
+            player->life = 2;
+            player->is_dead = false;
+        });
+        transition_animation.reset();
     });
 
     player->on_start_taking_damage = [this]() {
-        this->game_handler.get_window_shaker().start_shake();
+        auto& window_shaker = this->game_handler.get_window_shaker();
+        window_shaker.start_shake();
     };
-
-    this->game_handler.get_transition_animation().register_transition_callback([this]() {
-        auto player = this->player();
-        if (!player) {
-            return;
-        }
-
-        player->set_position(100.0, 100.0);
-        player->life = 2;
-        player->is_dead = false;
-    });
 }
 
 King* GameScreen::player()

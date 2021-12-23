@@ -59,6 +59,7 @@ void TitleScreen::update(double elapsed_time)
             } else if (this->selected_menu == SelectedMenu::EXIT_GAME) {
                 this->on_exit_game_pressed();
             }
+            this->state = State::DONE;
         }
     }
 }

@@ -9,13 +9,14 @@ class TitleScreen : public IScreen
 {
 private:
     enum class State {
-        SHOWING_TITLE = 0,
-        SHOWING_MAIN_MENU = 1
+        SHOWING_TITLE,
+        SHOWING_MAIN_MENU,
+        DONE
     };
 
     enum class SelectedMenu {
-        START_GAME = 0,
-        EXIT_GAME = 1,
+        START_GAME,
+        EXIT_GAME,
         SIZE
     };
 

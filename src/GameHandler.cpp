@@ -11,9 +11,12 @@ extern Vector2D<int> camera_offset;
 std::unique_ptr<TitleScreen> GameHandler::create_title_screen(GameHandler* game_handler)
 {
     auto on_new_game = [game_handler](){
-        auto game_screen = std::make_unique<GameScreen>(*game_handler);
-        game_screen->set_active_level(std::make_unique<EntryLevel>(*game_handler));
-        game_handler->screen = std::move(game_screen);
+        game_handler->transition_animation.register_transition_callback([game_handler]() {
+            auto game_screen = std::make_unique<GameScreen>(*game_handler);
+            game_screen->set_active_level(std::make_unique<EntryLevel>(*game_handler));
+            game_handler->screen = std::move(game_screen);
+        });
+        game_handler->transition_animation.reset();
     };
     auto on_game_exit = [game_handler](){
         game_handler->game_finished = true;
@@ -51,8 +54,11 @@ void GameHandler::update()
 
 void GameHandler::render()
 {
+    auto elapsed_time = this->time_handler.get_elapsed_time();
+
     SDL_SetRenderDrawColor(this->renderer, 0, 0, 0, 255);
     SDL_RenderClear(this->renderer);
-    this->screen->render(this->renderer, this->time_handler.get_elapsed_time());
+    this->screen->render(this->renderer, elapsed_time);
+    this->transition_animation.run(renderer, elapsed_time);
     SDL_RenderPresent(this->renderer);
 }
