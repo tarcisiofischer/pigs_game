@@ -28,6 +28,10 @@ std::vector<IGameCharacter*>& EntryLevel::get_characters()
 std::function<void()> EntryLevel::get_collision_callback(int callback_collision_id, IGameCharacter* character)
 {
     if (callback_collision_id == 1) {
+        if (dynamic_cast<King*>(character) == nullptr) {
+            return nullptr;
+        }
+
         auto& game_handler = this->game_handler;
         return [&game_handler]() {
             auto& transition = game_handler.get_transition_animation();
