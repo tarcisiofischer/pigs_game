@@ -55,6 +55,8 @@ public:
     {
         return this->time_handler;
     }
+private:
+    static std::unique_ptr<TitleScreen> create_title_screen(GameHandler* game_handler);
 
 private:
     SDL_Renderer* renderer;
