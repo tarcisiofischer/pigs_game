@@ -17,13 +17,6 @@ GameHandler::GameHandler(SDL_Window* window)
 {
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
     assets_registry.load(renderer);
-
-    // TODO: Related to main screen - move to somewhere else
-    this->timeout_done = false;
-    this->main_screen_timeout = StateTimeout(1000., [this](){
-        this->timeout_done = true;
-    });
-    this->main_screen_timeout.restart();
 }
 
 void GameHandler::set_active_level(std::unique_ptr<IGameLevel>&& lvl)
@@ -95,6 +88,8 @@ void GameHandler::update()
         this->update_characters(elapsed_time);
         this->compute_collisions();
         this->window_shaker.update(elapsed_time);
+    } else {
+        this->screen.update(elapsed_time);
     }
 }
 
@@ -112,19 +107,6 @@ King* GameHandler::player()
         }
     }
     return nullptr;
-}
-
-void GameHandler::render_main_screen()
-{
-    auto elapsed_time = time_handler.get_elapsed_time();
-    main_screen_timeout.update(elapsed_time);
-    if (this->timeout_done) {
-        return;
-        // move_to_next_screen();
-    }
-
-    auto text_position = Vector2D<int> { SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 };
-    gout(this->renderer, assets_registry.monogram, text_position, "Pigs Game", RGBColor { 255, 255, 255 });
 }
 
 void GameHandler::render_lvl()
@@ -261,11 +243,11 @@ void GameHandler::render()
     SDL_SetRenderDrawColor(this->renderer, 0, 0, 0, 255);
     SDL_RenderClear(this->renderer);
 
-    // TODO: Properly handle the screen state
+    // TODO: Make screen dynamic
     if (this->active_lvl) {
         this->render_lvl();
     } else {
-        this->render_main_screen();
+        this->screen.render(this->renderer);
     }
 
     SDL_RenderPresent(this->renderer);

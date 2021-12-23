@@ -41,6 +41,9 @@ set(SOURCE_FILES
     levels/PreludeLevel.hpp
     levels/PreludeLevel.cpp
 
+    screens/TitleScreen.hpp
+    screens/TitleScreen.cpp
+
     Animation.cpp
     Animation.hpp
     AssetsRegistry.cpp

@@ -10,6 +10,7 @@
 #include <memory>
 #include <random.hpp>
 #include <sdl_wrappers.hpp>
+#include <screens/TitleScreen.hpp>
 
 class SDL_Window;
 
@@ -77,9 +78,8 @@ private:
     std::vector<std::string> debug_messages;
     GameTimeHandler time_handler;
 
-    // TODO: Main screen stuff, must move to somewhere else
-    bool timeout_done;
-    StateTimeout main_screen_timeout;
+    // TODO: Make screen dynamic
+    TitleScreen screen;
 };
 
 #endif
