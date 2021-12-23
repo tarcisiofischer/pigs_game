@@ -35,6 +35,7 @@ private:
     TitleScreen::State state;
     TitleScreen::SelectedMenu selected_menu;
 
+    bool action_key_pressed;
     std::function<void()> on_start_game_pressed;
     std::function<void()> on_exit_game_pressed;
 };

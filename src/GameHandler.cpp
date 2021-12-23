@@ -1,11 +1,7 @@
 #include <AssetsRegistry.hpp>
 #include <GameController.hpp>
 #include <GameHandler.hpp>
-#include <characters/King.hpp>
 #include <collision/character_collision.hpp>
-#include <collision/tilemap_collision.hpp>
-#include <constants.hpp>
-#include <drawing.hpp>
 #include <levels/EntryLevel.hpp>
 #include <screens/GameScreen.hpp>
 
@@ -20,7 +16,6 @@ GameHandler::GameHandler(SDL_Window* window)
         [this](){
             auto game_screen = std::make_unique<GameScreen>(*this);
             game_screen->set_active_level(std::make_unique<EntryLevel>(*this));
-
             this->screen = std::move(game_screen);
         },
         // on game exit

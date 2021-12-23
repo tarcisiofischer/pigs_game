@@ -13,6 +13,7 @@ TitleScreen::TitleScreen(
     : logo_timeout_done(false)
     , state(TitleScreen::State::SHOWING_TITLE)
     , selected_menu(TitleScreen::SelectedMenu::START_GAME)
+    , action_key_pressed(false)
     , on_start_game_pressed(on_start_game_pressed)
     , on_exit_game_pressed(on_exit_game_pressed)
 {
@@ -35,24 +36,30 @@ void TitleScreen::handle_controller(GameController const& controller)
         direction = -1;
     }
     this->selected_menu = static_cast<TitleScreen::SelectedMenu>(
-        ((int)(this->selected_menu) + direction) % (int)TitleScreen::SelectedMenu::SIZE
+        ((int)(this->selected_menu) + direction) % (int)SelectedMenu::SIZE
     );
 
     if (controller.just_pressed(ControllerAction::ActionKey)) {
-        if (this->selected_menu == TitleScreen::SelectedMenu::START_GAME) {
-             this->on_start_game_pressed();
-        } else if (this->selected_menu == TitleScreen::SelectedMenu::EXIT_GAME) {
-            this->on_exit_game_pressed();
-        }
+        this->action_key_pressed = true;
     }
 }
 
 void TitleScreen::update(double elapsed_time)
 {
     main_screen_timeout.update(elapsed_time);
-    if (this->logo_timeout_done) {
-        this->state = TitleScreen::State::SHOWING_MAIN_MENU;
-        return;
+    if (this->state == State::SHOWING_TITLE) {
+        if (this->logo_timeout_done) {
+            this->state = State::SHOWING_MAIN_MENU;
+            return;
+        }
+    } else if (this->state == State::SHOWING_MAIN_MENU) {
+        if (this->action_key_pressed) {
+            if (this->selected_menu == SelectedMenu::START_GAME) {
+                this->on_start_game_pressed();
+            } else if (this->selected_menu == SelectedMenu::EXIT_GAME) {
+                this->on_exit_game_pressed();
+            }
+        }
     }
 }
 
