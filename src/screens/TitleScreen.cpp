@@ -4,7 +4,7 @@
 #include <constants.hpp>
 #include <drawing.hpp>
 
-#include <iostream>
+using namespace std::string_literals;
 
 TitleScreen::TitleScreen(
     std::function<void()> const& on_start_game_pressed,
@@ -58,20 +58,26 @@ void TitleScreen::update(double elapsed_time)
 
 void TitleScreen::render(SDL_Renderer* renderer) const
 {
+    SDL_SetRenderDrawColor(renderer, 50, 50, 50, 255);
+    SDL_RenderClear(renderer);
+
     if (this->state == TitleScreen::State::SHOWING_TITLE) {
-        auto text_position = Vector2D<int> { SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 };
-        gout(renderer, assets_registry.monogram, text_position, "Pigs Game", RGBColor { 255, 255, 255 });
+        auto text = "Pigs Game"s;
+        auto text_position = Vector2D<int> { (SCREEN_WIDTH - gstr_width(text)) / 2, SCREEN_HEIGHT / 2 };
+        gout(renderer, assets_registry.monogram, text_position, text, RGBColor { 255, 255, 255 });
     } else if (this->state == TitleScreen::State::SHOWING_MAIN_MENU) {
         // TODO: Make actual buttons
         {
-            auto text_color = (this->selected_menu == TitleScreen::SelectedMenu::START_GAME) ? RGBColor { 0, 200, 0 } : RGBColor { 255, 255, 255 };
-            auto text_position = Vector2D<int> { SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 };
-            gout(renderer, assets_registry.monogram, text_position, "Start new game", text_color);
+            auto text = "Start new game"s;
+            auto text_color = (this->selected_menu == TitleScreen::SelectedMenu::START_GAME) ? RGBColor { 0, 150, 0 } : RGBColor { 255, 255, 255 };
+            auto text_position = Vector2D<int> { (SCREEN_WIDTH - gstr_width(text)) / 2, SCREEN_HEIGHT / 2 };
+            gout(renderer, assets_registry.monogram, text_position, text, text_color);
         }
         {
-            auto text_color = (this->selected_menu == TitleScreen::SelectedMenu::EXIT_GAME) ? RGBColor { 0, 200, 0 } : RGBColor { 255, 255, 255 };
-            auto text_position = Vector2D<int> { SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 40};
-            gout(renderer, assets_registry.monogram, text_position, "Exit", text_color);
+            auto text = "Exit"s;
+            auto text_color = (this->selected_menu == TitleScreen::SelectedMenu::EXIT_GAME) ? RGBColor { 0, 150, 0 } : RGBColor { 255, 255, 255 };
+            auto text_position = Vector2D<int> { (SCREEN_WIDTH - gstr_width(text)) / 2, SCREEN_HEIGHT / 2 + 40};
+            gout(renderer, assets_registry.monogram, text_position, text, text_color);
         }
     }
 }

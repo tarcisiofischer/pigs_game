@@ -57,6 +57,11 @@ void draw_line(SDL_Renderer* renderer, Vector2D<int> const& start_position, Vect
     SDL_RenderDrawLine(renderer, start_position.x, start_position.y, end_position.x, end_position.y);
 }
 
+int gstr_width(std::string const& text)
+{
+    return text.size() * 6 * SCALE_SIZE;
+}
+
 Region2D<int> gout(SDL_Renderer* renderer, SDL_Texture* spritesheet, Vector2D<int> const& static_camera_position,
     std::string const& message, RGBColor const& text_color)
 {
