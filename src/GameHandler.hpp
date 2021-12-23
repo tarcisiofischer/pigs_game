@@ -3,6 +3,7 @@
 
 #include <StateTimeout.hpp>
 #include <TransitionAnimation.hpp>
+#include <GameTimeHandler.hpp>
 #include <Vector2D.hpp>
 #include <characters/King.hpp>
 #include <levels/IGameLevel.hpp>
@@ -51,8 +52,8 @@ public:
     void set_active_level(std::unique_ptr<IGameLevel>&& lvl);
 
     bool process_inputs();
-    void update(double elapsed_time);
-    void render(double elapsed_time);
+    void update();
+    void render();
 
     King* player();
 
@@ -72,6 +73,7 @@ private:
 
     bool enable_debug;
     std::vector<std::string> debug_messages;
+    GameTimeHandler time_handler;
 };
 
 #endif

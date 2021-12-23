@@ -79,8 +79,11 @@ bool GameHandler::process_inputs()
     return true;
 }
 
-void GameHandler::update(double elapsed_time)
+void GameHandler::update()
 {
+    this->time_handler.update();
+
+    auto elapsed_time = time_handler.get_elapsed_time();
     this->update_characters(elapsed_time);
     this->compute_collisions();
     this->window_shaker.update(elapsed_time);
@@ -98,11 +101,13 @@ King* GameHandler::player()
     return nullptr;
 }
 
-void GameHandler::render(double elapsed_time)
+void GameHandler::render()
 {
+    auto elapsed_time = time_handler.get_elapsed_time();
+
     if (this->enable_debug) {
         this->debug_messages.clear();
-        // this->debug_messages.push_back("FPS: " + std::to_string(fps));
+        this->debug_messages.push_back("FPS: " + std::to_string(time_handler.get_fps()));
     }
 
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
@@ -112,7 +117,6 @@ void GameHandler::render(double elapsed_time)
     auto const& game_characters = this->active_lvl->get_characters();
     auto player = this->player();
 
-    // Draw background
     auto shake = this->window_shaker.get_shake();
     // TODO PIG-11: Only draw what's in the screen
     for (int i = 0; i < map.height; ++i) {

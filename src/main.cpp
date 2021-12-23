@@ -1,5 +1,4 @@
 #include <GameHandler.hpp>
-#include <GameTimeHandler.hpp>
 #include <SDL.h>
 #include <Vector2D.hpp>
 #include <constants.hpp>
@@ -26,19 +25,15 @@ int main()
         throw std::runtime_error("SDL Error: Window could not be created");
     }
 
-    auto time_handler = GameTimeHandler{};
     auto game_handler = GameHandler(window);
     game_handler.set_active_level(std::make_unique<EntryLevel>(game_handler));
 
     while (true) {
-        time_handler.update();
-        auto elapsed_time = time_handler.get_elapsed_time();
-
         if (!game_handler.process_inputs()) {
             break;
         }
-        game_handler.update(elapsed_time);
-        game_handler.render(elapsed_time);
+        game_handler.update();
+        game_handler.render();
     }
 
     SDL_DestroyWindow(window);
