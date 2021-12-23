@@ -26,7 +26,7 @@ int main()
     }
 
     auto game_handler = GameHandler(window);
-    game_handler.set_active_level(std::make_unique<EntryLevel>(game_handler));
+//    game_handler.set_active_level(std::make_unique<EntryLevel>(game_handler));
 
     while (true) {
         if (!game_handler.process_inputs()) {

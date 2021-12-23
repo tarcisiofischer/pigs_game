@@ -63,6 +63,8 @@ public:
 private:
     void update_characters(double elapsed_time);
     void compute_collisions();
+    void render_lvl();
+    void render_main_screen();
 
 private:
     std::unique_ptr<IGameLevel> active_lvl;
@@ -74,6 +76,10 @@ private:
     bool enable_debug;
     std::vector<std::string> debug_messages;
     GameTimeHandler time_handler;
+
+    // TODO: Main screen stuff, must move to somewhere else
+    bool timeout_done;
+    StateTimeout main_screen_timeout;
 };
 
 #endif

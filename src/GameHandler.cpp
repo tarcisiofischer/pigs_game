@@ -17,6 +17,13 @@ GameHandler::GameHandler(SDL_Window* window)
 {
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
     assets_registry.load(renderer);
+
+    // TODO: Related to main screen - move to somewhere else
+    this->timeout_done = false;
+    this->main_screen_timeout = StateTimeout(1000., [this](){
+        this->timeout_done = true;
+    });
+    this->main_screen_timeout.restart();
 }
 
 void GameHandler::set_active_level(std::unique_ptr<IGameLevel>&& lvl)
@@ -83,14 +90,20 @@ void GameHandler::update()
 {
     this->time_handler.update();
 
-    auto elapsed_time = time_handler.get_elapsed_time();
-    this->update_characters(elapsed_time);
-    this->compute_collisions();
-    this->window_shaker.update(elapsed_time);
+    auto elapsed_time = this->time_handler.get_elapsed_time();
+    if (this->active_lvl) {
+        this->update_characters(elapsed_time);
+        this->compute_collisions();
+        this->window_shaker.update(elapsed_time);
+    }
 }
 
 King* GameHandler::player()
 {
+    if (!this->active_lvl) {
+        return nullptr;
+    }
+
     auto& characters = this->active_lvl->get_characters();
     for (auto& c : characters) {
         auto* k = dynamic_cast<King*>(c);
@@ -101,18 +114,22 @@ King* GameHandler::player()
     return nullptr;
 }
 
-void GameHandler::render()
+void GameHandler::render_main_screen()
 {
     auto elapsed_time = time_handler.get_elapsed_time();
-
-    if (this->enable_debug) {
-        this->debug_messages.clear();
-        this->debug_messages.push_back("FPS: " + std::to_string(time_handler.get_fps()));
+    main_screen_timeout.update(elapsed_time);
+    if (this->timeout_done) {
+        return;
+        // move_to_next_screen();
     }
 
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-    SDL_RenderClear(renderer);
+    auto text_position = Vector2D<int> { SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 };
+    gout(this->renderer, assets_registry.monogram, text_position, "Pigs Game", RGBColor { 255, 255, 255 });
+}
 
+void GameHandler::render_lvl()
+{
+    auto elapsed_time = time_handler.get_elapsed_time();
     auto const& map = this->active_lvl->get_map();
     auto const& game_characters = this->active_lvl->get_characters();
     auto player = this->player();
@@ -127,16 +144,16 @@ void GameHandler::render()
                 auto offset = Vector2D<int> { TILE_SIZE * (tile_id % 12), TILE_SIZE * int(floor(tile_id / 12)) };
                 auto world_position = Vector2D<int> { TILE_SIZE * j + shake.x, TILE_SIZE * (map.height - i - 1) + shake.y };
                 auto size = Vector2D<int> { TILE_SIZE, TILE_SIZE };
-                draw_sprite(renderer, assets_registry.tileset, offset, world_position, size, camera_offset);
+                draw_sprite(this->renderer, assets_registry.tileset, offset, world_position, size, camera_offset);
 
                 if (this->enable_debug) {
-                    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 40);
+                    SDL_SetRenderDrawColor(this->renderer, 255, 0, 0, 40);
                     for (auto&& collision_tile_id : collision_tiles) {
                         if (tile_id == collision_tile_id) {
                             auto camera_position = to_camera_position(world_position, size, camera_offset);
                             auto dstrect = SDL_Rect { camera_position.x, camera_position.y, SCALE_SIZE * size.x,
-                                SCALE_SIZE * size.y };
-                            SDL_RenderFillRect(renderer, &dstrect);
+                                                      SCALE_SIZE * size.y };
+                            SDL_RenderFillRect(this->renderer, &dstrect);
                         }
                     }
                 }
@@ -148,7 +165,7 @@ void GameHandler::render()
                 auto offset = Vector2D<int> { TILE_SIZE * (tile_id % 7), TILE_SIZE * int(floor(tile_id / 7)) };
                 auto world_position = Vector2D<int> { TILE_SIZE * j + shake.x, TILE_SIZE * (map.height - i - 1) + shake.y };
                 auto size = Vector2D<int> { TILE_SIZE, TILE_SIZE };
-                draw_sprite(renderer, assets_registry.foreground_set, offset, world_position, size, camera_offset);
+                draw_sprite(this->renderer, assets_registry.foreground_set, offset, world_position, size, camera_offset);
             }
         }
     }
@@ -159,14 +176,14 @@ void GameHandler::render()
             auto offset = Vector2D<int> { 0, 0 };
             auto size = Vector2D<int> { 66, 34 };
             auto static_camera_position = Vector2D<int> { 10, SCREEN_HEIGHT / SCALE_SIZE - size.y - 10 };
-            draw_static_sprite(renderer, assets_registry.lifebar, offset, static_camera_position, size);
+            draw_static_sprite(this->renderer, assets_registry.lifebar, offset, static_camera_position, size);
         }
 
         auto offset = Vector2D<int> { 0, 0 };
         auto size = Vector2D<int> { 18, 14 };
         for (int i = 0; i < player->life; ++i) {
             auto camera_position = Vector2D<int> { 21 + 11 * i, SCREEN_HEIGHT / SCALE_SIZE - size.y - 20 };
-            draw_static_sprite(renderer, assets_registry.lifebar_heart, offset, camera_position, size);
+            draw_static_sprite(this->renderer, assets_registry.lifebar_heart, offset, camera_position, size);
         }
     }
 
@@ -175,7 +192,7 @@ void GameHandler::render()
     }
     // TODO PIG-13: Move this to somewhere else; Should only exist when
     // transition is active.
-    this->transition_animation.run(renderer, elapsed_time);
+    this->transition_animation.run(this->renderer, elapsed_time);
 
     if (this->enable_debug) {
         int mousex = 0;
@@ -189,29 +206,29 @@ void GameHandler::render()
         auto g = (Uint8)(0);
         auto b = (Uint8)(0);
         auto a = (Uint8)(0);
-        SDL_GetRenderDrawColor(renderer, &r, &g, &b, &a);
+        SDL_GetRenderDrawColor(this->renderer, &r, &g, &b, &a);
 
         auto debug_area_rect = to_sdl_rect(Region2D<int> { 0, 0, SCREEN_WIDTH, 80 });
 
-        SDL_SetRenderDrawColor(renderer, 65, 60, 70, 220);
-        SDL_RenderFillRect(renderer, &debug_area_rect);
+        SDL_SetRenderDrawColor(this->renderer, 65, 60, 70, 220);
+        SDL_RenderFillRect(this->renderer, &debug_area_rect);
         auto text_position = Vector2D<int> { 10, 10 };
         for (auto const& message : this->debug_messages) {
-            gout(renderer, assets_registry.monogram, text_position, message, RGBColor { 100, 240, 100 });
+            gout(this->renderer, assets_registry.monogram, text_position, message, RGBColor { 100, 240, 100 });
             text_position.y += 10;
         }
 
-        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 90);
+        SDL_SetRenderDrawColor(this->renderer, 255, 0, 0, 90);
         for (auto& game_character : game_characters) {
             auto const& collision_region = game_character->get_collision_region_information().collision_region;
             auto camera_position = to_camera_position(Vector2D<int> { int(collision_region.x), int(collision_region.y) },
-                Vector2D<int> { int(collision_region.w), int(collision_region.h) }, camera_offset);
+                                                      Vector2D<int> { int(collision_region.w), int(collision_region.h) }, camera_offset);
             auto collision_rect = to_sdl_rect(Region2D<int> { camera_position.x, camera_position.y, int(SCALE_SIZE * collision_region.w),
-                int(SCALE_SIZE * collision_region.h) });
-            SDL_RenderFillRect(renderer, &collision_rect);
+                                                              int(SCALE_SIZE * collision_region.h) });
+            SDL_RenderFillRect(this->renderer, &collision_rect);
         }
 
-        SDL_SetRenderDrawColor(renderer, r, g, b, a);
+        SDL_SetRenderDrawColor(this->renderer, r, g, b, a);
     }
 
     // Update camera
@@ -232,14 +249,31 @@ void GameHandler::render()
         camera_offset.x = std::max(camera_min_x, std::min(user_centered_camera_x, camera_max_x));
         camera_offset.y = std::max(camera_min_y, std::min(user_centered_camera_y, camera_max_y));
     }
+}
 
-    SDL_RenderPresent(renderer);
+void GameHandler::render()
+{
+    if (this->enable_debug) {
+        this->debug_messages.clear();
+        this->debug_messages.push_back("FPS: " + std::to_string(time_handler.get_fps()));
+    }
+
+    SDL_SetRenderDrawColor(this->renderer, 0, 0, 0, 255);
+    SDL_RenderClear(this->renderer);
+
+    // TODO: Properly handle the screen state
+    if (this->active_lvl) {
+        this->render_lvl();
+    } else {
+        this->render_main_screen();
+    }
+
+    SDL_RenderPresent(this->renderer);
 }
 
 void GameHandler::update_characters(double elapsed_time)
 {
     auto& game_characters = this->active_lvl->get_characters();
-
     for (auto* c : game_characters) {
         c->update(elapsed_time);
     }
