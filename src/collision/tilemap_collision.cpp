@@ -1,5 +1,4 @@
 #include <GameMap.hpp>
-#include <array>
 #include <characters/IGameCharacter.hpp>
 #include <cmath>
 #include <collision/aabb.hpp>
@@ -7,7 +6,6 @@
 #include <collision/tilemap_collision.hpp>
 #include <constants.hpp>
 #include <functional>
-#include <iostream>
 #include <levels/IGameLevel.hpp>
 
 namespace {

@@ -2,11 +2,8 @@
 #include <SDL.h>
 #include <Vector2D.hpp>
 #include <constants.hpp>
-#include <levels/EntryLevel.hpp>
-#include <memory>
 #include <optional>
 #include <sdl_wrappers.hpp>
-#include <iostream>
 
 // TODO PIG-12: Initialize the camera on main (avoid global)
 Vector2D<int> camera_offset { 0, 0 };

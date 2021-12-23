@@ -1,6 +1,5 @@
 #include <SceneScript.hpp>
 #include <characters/Pig.hpp>
-#include <iostream>
 
 AbstractSceneHandler::AbstractSceneHandler()
     : finished(false)
