@@ -16,7 +16,7 @@ GameHandler::GameHandler(SDL_Window* window)
     , renderer(SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED))
     , enable_debug(false)
     // TODO: Properly configure screen buttons
-    , screen{
+    , screen(std::make_unique<TitleScreen>(
         // on new game
         [this](){
             this->set_active_level(std::make_unique<EntryLevel>(*this));
@@ -25,7 +25,7 @@ GameHandler::GameHandler(SDL_Window* window)
         [this](){
             this->game_finished = true;
         }
-    }
+    ))
     , game_finished(false)
 {
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
@@ -94,7 +94,7 @@ void GameHandler::process_inputs()
             player->handle_controller(keystates);
         }
     } else {
-        this->screen.handle_controller(game_controller);
+        this->screen->handle_controller(game_controller);
     }
 }
 
@@ -109,7 +109,7 @@ void GameHandler::update()
         this->compute_collisions();
         this->window_shaker.update(elapsed_time);
     } else {
-        this->screen.update(elapsed_time);
+        this->screen->update(elapsed_time);
     }
 }
 
@@ -267,7 +267,7 @@ void GameHandler::render()
     if (this->active_lvl) {
         this->render_lvl();
     } else {
-        this->screen.render(this->renderer);
+        this->screen->render(this->renderer);
     }
 
     SDL_RenderPresent(this->renderer);

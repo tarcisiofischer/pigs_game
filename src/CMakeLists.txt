@@ -41,8 +41,11 @@ set(SOURCE_FILES
     levels/PreludeLevel.hpp
     levels/PreludeLevel.cpp
 
+    screens/IScreen.hpp
     screens/TitleScreen.hpp
     screens/TitleScreen.cpp
+    screens/GameScreen.hpp
+    screens/GameScreen.cpp
 
     Animation.cpp
     Animation.hpp

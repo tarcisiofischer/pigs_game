@@ -1,0 +1,8 @@
+#ifndef PIGSGAME_GAMESCREEN_HPP
+#define PIGSGAME_GAMESCREEN_HPP
+
+class GameScreen {
+
+};
+
+#endif //PIGSGAME_GAMESCREEN_HPP

@@ -84,8 +84,7 @@ private:
 
     bool game_finished;
 
-    // TODO: Make screen dynamic
-    TitleScreen screen;
+    std::unique_ptr<IScreen> screen;
 };
 
 #endif

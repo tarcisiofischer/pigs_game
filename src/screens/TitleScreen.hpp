@@ -2,11 +2,10 @@
 #define PIGSGAME_TITLESCREEN_HPP
 
 #include <StateTimeout.hpp>
-#include <sdl_wrappers.hpp>
-#include <GameController.hpp>
+#include <screens/IScreen.hpp>
 #include <functional>
 
-class TitleScreen
+class TitleScreen : public IScreen
 {
 private:
     enum class State {
@@ -24,9 +23,10 @@ public:
     TitleScreen(std::function<void()> const& on_start_game_pressed, std::function<void()> const& on_exit_game_pressed);
     TitleScreen(TitleScreen const& other) = delete;
     TitleScreen(TitleScreen&& other) = default;
-    void handle_controller(GameController const& keystates);
-    void update(double elapsed_time);
-    void render(SDL_Renderer* renderer) const;
+
+    void handle_controller(GameController const& keystates) override;
+    void update(double elapsed_time) override;
+    void render(SDL_Renderer* renderer) const override;
 
 private:
     bool logo_timeout_done;
