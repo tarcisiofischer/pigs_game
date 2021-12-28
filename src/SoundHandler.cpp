@@ -1,13 +1,12 @@
 #include <SoundHandler.hpp>
-#include <iostream>
-#include <string>
+#include <logging.hpp>
 
 namespace {
     Mix_Music* load_music(std::string const& filename)
     {
         auto* music = Mix_LoadMUS(filename.c_str());
         if (!music) {
-            std::cout << "WARNING: Unable to load music. SDL Error: " << Mix_GetError() << " (Filename: " << filename << ")" << std::endl;
+            warn("Unable to load music (filename="s + filename + ": "s + Mix_GetError());
         }
         return music;
     }
@@ -16,7 +15,7 @@ namespace {
     {
         auto* sound = Mix_LoadWAV(filename.c_str());
         if (!sound) {
-            std::cout << "WARNING: Unable to load sound. SDL Error: " << Mix_GetError() << " (Filename: " << filename << ")" << std::endl;
+            warn("Unable to load sound (filename="s + filename + ": "s + Mix_GetError());
         }
         return sound;
     }
@@ -25,11 +24,11 @@ namespace {
 SoundHandler::SoundHandler()
 {
     if (Mix_Init(MIX_INIT_OGG) != MIX_INIT_OGG) {
-        std::cout << "Warning: Failed to init required OGG support! Details: " << Mix_GetError() << std::endl;
+        warn("Failed to init required OGG support: "s + Mix_GetError());
     }
 
     if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
-        std::cout << "Warning: Sound could not be initialized. Details: " << Mix_GetError() << std::endl;
+        warn("Sound could not be initialized: "s + Mix_GetError());
     }
 }
 
@@ -55,24 +54,24 @@ SoundHandler::~SoundHandler()
 void SoundHandler::play_music(std::string const& music_name)
 {
     if (!this->music_registry.contains(music_name)) {
-        std::cout << "WARNING: Unknown " << music_name << ". Perhaps the sound handler isn't ready?" << std::endl;
+        warn("Unknown music named \""s + music_name + "\". Perhaps the sound handler isn't ready?");
         return;
     }
 
     if (Mix_FadeInMusic(this->music_registry.at(music_name), -1, 2000) == -1) {
-        std::cout << "WARNING: Unable to play music. SDL Error: " << Mix_GetError() << std::endl;
+        warn("Unable to play music: "s + Mix_GetError());
     }
 }
 
 void SoundHandler::play(std::string const& sound_name)
 {
     if (!this->sound_registry.contains(sound_name)) {
-        std::cout << "WARNING: Unknown " << sound_name << ". Perhaps the sound handler isn't ready?" << std::endl;
+        warn("Unknown sound named \""s + sound_name + "\". Perhaps the sound handler isn't ready?");
         return;
     }
 
     if (Mix_PlayChannel(-1, this->sound_registry.at(sound_name), 0) == -1) {
-        std::cout << "WARNING: Unable to play sound. SDL Error: " << Mix_GetError() << std::endl;
+        warn("Unable to play sound: "s + Mix_GetError());
     }
 }
 

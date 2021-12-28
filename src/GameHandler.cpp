@@ -5,7 +5,7 @@
 #include <collision/character_collision.hpp>
 #include <levels/EntryLevel.hpp>
 #include <screens/GameScreen.hpp>
-#include <iostream>
+#include <logging.hpp>
 
 // TODO PIG-12: Initialize the camera on main (avoid global)
 extern Vector2D<int> camera_offset;
@@ -21,7 +21,7 @@ namespace {
                 SCREEN_HEIGHT,
                 SDL_WINDOW_SHOWN);
         if (window == nullptr) {
-            throw std::runtime_error("SDL Error: Window could not be created");
+            err("Window could not be created");
         }
         return window;
     }
@@ -33,7 +33,7 @@ namespace {
             renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
         }
         if (renderer == nullptr) {
-            throw std::runtime_error("SDL Error: Renderer could not be created");
+            err("Renderer could not be created");
         }
         return renderer;
     }

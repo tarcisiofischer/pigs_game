@@ -1,10 +1,11 @@
 #include <io.hpp>
+#include <logging.hpp>
 
 void save_map(GameMap const& map, std::string const& filename)
 {
     std::ofstream mapfile(filename, std::ios::binary | std::ios::out);
     if (!mapfile.is_open()) {
-        throw std::runtime_error("Could not open file to write");
+        err("Could not open file to write. filename="s + filename);
     }
     auto bin_write = [&mapfile](int const& data) { mapfile.write(reinterpret_cast<const char*>(&data), sizeof(int)); };
 
@@ -34,7 +35,7 @@ GameMap load_map(std::string const& filename)
 {
     std::ifstream mapfile(filename, std::ios::binary | std::ios::in);
     if (!mapfile.is_open()) {
-        throw std::runtime_error("Could not open file to read");
+        err("Could not load file to read. filename="s + filename);
     }
 
     auto bin_read_nextint = [&mapfile](int& target) { mapfile.read(reinterpret_cast<char*>(&target), sizeof(int)); };

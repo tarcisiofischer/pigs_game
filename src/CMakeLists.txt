@@ -66,6 +66,7 @@ set(SOURCE_FILES
     GameMap.hpp
     io.cpp
     io.hpp
+    logging.hpp
     random.hpp
     sdl_wrappers.cpp
     sdl_wrappers.hpp

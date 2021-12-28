@@ -1,6 +1,7 @@
 #include <AssetsRegistry.hpp>
 #include <SoundHandler.hpp>
 #include <characters/Pig.hpp>
+#include <logging.hpp>
 
 Pig::Pig(SDL_Renderer* renderer, double pos_x, double pos_y)
     : running_side(0)
@@ -365,7 +366,8 @@ int Pig::get_dynamic_property(int property_id) const
             return this->script->get_active_script_line();
         }
     }
-    throw std::runtime_error("Unknown property");
+    err("Unknown Pig property with property_id="s + std::to_string(property_id));
+    return -1;
 }
 
 void Pig::connect_callbacks()

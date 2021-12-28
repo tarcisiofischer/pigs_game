@@ -1,8 +1,6 @@
 #include <GameHandler.hpp>
 #include <SDL.h>
 #include <Vector2D.hpp>
-#include <constants.hpp>
-#include <optional>
 #include <sdl_wrappers.hpp>
 
 // TODO PIG-12: Initialize the camera on main (avoid global)
