@@ -10,6 +10,8 @@ SDL_Texture* load_media(std::string const& filename, SDL_Renderer* renderer)
     auto* texture = SDL_CreateTextureFromSurface(renderer, surface);
     if (texture == nullptr) {
         std::cout << "WARNING: Unable to create texture from image. SDL Error: " << SDL_GetError() << std::endl;
+        std::cout << "\tImage filename: " << filename << std::endl;
+        std::cout << "\tRenderer pointer: " << renderer << std::endl;
     }
     SDL_FreeSurface(surface);
     return texture;
