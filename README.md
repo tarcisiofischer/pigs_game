@@ -15,13 +15,19 @@ SDL, so no extra dependencies are required.
 
 ## How to build
 
-Make sure you have SDL installed. Building with CMake should be straightforward.
+Make sure you have SDL installed. For example, in Ubuntu systems:
+
+```
+apt install libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev
+```
+
+Building with CMake:
 
 ```
 mkdir build/
 cd build/
 cmake ..
-make
+cmake --build .
 ```
 
 ## Special thanks
