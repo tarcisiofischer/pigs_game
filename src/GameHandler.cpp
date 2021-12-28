@@ -4,9 +4,29 @@
 #include <collision/character_collision.hpp>
 #include <levels/EntryLevel.hpp>
 #include <screens/GameScreen.hpp>
+#include <iostream>
 
 // TODO PIG-12: Initialize the camera on main (avoid global)
 extern Vector2D<int> camera_offset;
+
+namespace {
+    SDL_Renderer* create_renderer(SDL_Window* window)
+    {
+        auto* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+        if (renderer != nullptr) {
+            return renderer;
+        }
+
+        std::cout << "WARNING: Could not create accelerated renderer. Trying software renderer (fallback)..." << std::endl;
+        renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
+        if (renderer != nullptr) {
+            return renderer;
+        }
+
+        std::cout << "Error: Could not create renderer. Giving up." << std::endl;
+        return nullptr;
+    }
+}
 
 std::unique_ptr<TitleScreen> GameHandler::create_title_screen(GameHandler* game_handler)
 {
@@ -25,7 +45,7 @@ std::unique_ptr<TitleScreen> GameHandler::create_title_screen(GameHandler* game_
 }
 
 GameHandler::GameHandler(SDL_Window* window)
-    : renderer(SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED))
+    : renderer(create_renderer(window))
     , screen(GameHandler::create_title_screen(this))
     , game_finished(false)
 {
