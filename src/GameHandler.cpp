@@ -13,18 +13,13 @@ namespace {
     SDL_Renderer* create_renderer(SDL_Window* window)
     {
         auto* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-        if (renderer != nullptr) {
-            return renderer;
+        if (renderer == nullptr) {
+            renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
         }
-
-        std::cout << "WARNING: Could not create accelerated renderer. Trying software renderer (fallback)..." << std::endl;
-        renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
-        if (renderer != nullptr) {
-            return renderer;
+        if (renderer == nullptr) {
+            throw std::runtime_error("SDL Error: Renderer could not be created");
         }
-
-        std::cout << "Error: Could not create renderer. Giving up." << std::endl;
-        return nullptr;
+        return renderer;
     }
 }
 
