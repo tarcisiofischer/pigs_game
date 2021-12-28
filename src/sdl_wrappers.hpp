@@ -8,6 +8,11 @@
 #include <string>
 
 SDL_Texture* load_media(std::string const& filename, SDL_Renderer* renderer);
-void initialize_sdl();
+
+struct SDL_Handler
+{
+    SDL_Handler();
+    ~SDL_Handler();
+};
 
 #endif

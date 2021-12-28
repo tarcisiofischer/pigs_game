@@ -1,4 +1,5 @@
 #include <AssetsRegistry.hpp>
+#include <SoundHandler.hpp>
 #include <GameController.hpp>
 #include <GameHandler.hpp>
 #include <collision/character_collision.hpp>
@@ -10,6 +11,21 @@
 extern Vector2D<int> camera_offset;
 
 namespace {
+    SDL_Window* create_window()
+    {
+        auto* window = SDL_CreateWindow(
+                WINDOW_TITLE,
+                SDL_WINDOWPOS_UNDEFINED,
+                SDL_WINDOWPOS_UNDEFINED,
+                SCREEN_WIDTH,
+                SCREEN_HEIGHT,
+                SDL_WINDOW_SHOWN);
+        if (window == nullptr) {
+            throw std::runtime_error("SDL Error: Window could not be created");
+        }
+        return window;
+    }
+
     SDL_Renderer* create_renderer(SDL_Window* window)
     {
         auto* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
@@ -39,13 +55,24 @@ std::unique_ptr<TitleScreen> GameHandler::create_title_screen(GameHandler* game_
     return std::make_unique<TitleScreen>(on_new_game, on_game_exit);
 }
 
-GameHandler::GameHandler(SDL_Window* window)
-    : renderer(create_renderer(window))
+GameHandler::GameHandler()
+    : window(create_window())
+    , renderer(create_renderer(this->window))
     , screen(GameHandler::create_title_screen(this))
     , game_finished(false)
 {
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
     assets_registry.load(renderer);
+    sound_handler.load();
+
+    // TODO: Move this to the TitleScreen class
+    sound_handler.play("title_screen");
+}
+
+GameHandler::~GameHandler()
+{
+    SDL_DestroyRenderer(this->renderer);
+    SDL_DestroyWindow(this->window);
 }
 
 void GameHandler::process_inputs()

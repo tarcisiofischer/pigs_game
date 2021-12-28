@@ -10,20 +10,8 @@ Vector2D<int> camera_offset { 0, 0 };
 
 int main()
 {
-    initialize_sdl();
-
-    auto* window = SDL_CreateWindow(
-        "Pigs game",
-        SDL_WINDOWPOS_UNDEFINED,
-        SDL_WINDOWPOS_UNDEFINED,
-        SCREEN_WIDTH,
-        SCREEN_HEIGHT,
-        SDL_WINDOW_SHOWN);
-    if (window == nullptr) {
-        throw std::runtime_error("SDL Error: Window could not be created");
-    }
-
-    auto game_handler = GameHandler(window);
+    SDL_Handler _();
+    auto game_handler = GameHandler();
 
     while (true) {
         Uint32 start_time = SDL_GetTicks();
@@ -39,9 +27,6 @@ int main()
             SDL_Delay((1000 / 70.) - (SDL_GetTicks() - start_time));
         }
     }
-
-    SDL_DestroyWindow(window);
-    SDL_Quit();
 
     return 0;
 }

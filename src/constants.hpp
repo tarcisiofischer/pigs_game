@@ -4,6 +4,7 @@
 #ifndef FORCE_SCALE_SIZE
 #define FORCE_SCALE_SIZE 2
 #endif
+auto constexpr WINDOW_TITLE = "Pigs Game";
 auto constexpr SCALE_SIZE = FORCE_SCALE_SIZE;
 auto constexpr TILE_SIZE = 32;
 auto constexpr SCREEN_WIDTH = 600 * SCALE_SIZE;

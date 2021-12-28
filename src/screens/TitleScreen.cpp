@@ -1,5 +1,6 @@
 #include <screens/TitleScreen.hpp>
 #include <AssetsRegistry.hpp>
+#include <SoundHandler.hpp>
 #include <Vector2D.hpp>
 #include <constants.hpp>
 #include <drawing.hpp>

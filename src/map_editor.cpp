@@ -172,8 +172,6 @@ public:
         , map_filename(map_filename)
         , bottom_panel_message("")
     {
-        initialize_sdl();
-
         this->sdl_window = SDL_CreateWindow("Pigs game - Map editor", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
             1200, 600, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
         if (this->sdl_window == nullptr) {
@@ -264,7 +262,6 @@ public:
     {
         SDL_DestroyWindow(this->sdl_window);
         SDL_DestroyRenderer(this->sdl_renderer);
-        SDL_Quit();
     }
 
     void run()
@@ -599,6 +596,8 @@ private:
 
 int main(int argc, char* argv[])
 {
+    SDL_Handler _();
+
     auto options = handle_args(argc, argv);
     std::cout << "Filename: " << options.filename;
     std::cout << (options.new_file ? "(New file)" : "(loading existing file)") << std::endl;

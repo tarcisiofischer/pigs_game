@@ -7,12 +7,14 @@
 #include <levels/EntryLevel.hpp>
 #include <levels/Level2.hpp>
 #include <screens/GameScreen.hpp>
+#include <SoundHandler.hpp>
 
 EntryLevel::EntryLevel(GameHandler& game_handler)
     : map(load_map("maps/entry_level.map"))
     , characters(build_game_characters(game_handler.get_renderer(), map))
     , game_handler(game_handler)
 {
+    sound_handler.play("forest");
 }
 
 GameMap& EntryLevel::get_map()

@@ -38,16 +38,16 @@ void TransitionAnimation::run(SDL_Renderer* renderer, double elapsedTime)
             this->transition_width = SCREEN_WIDTH;
             this->transition_velocity = 0.0;
             this->animation_state = TransitionAnimationState::waiting;
+
+            if (this->transition_callback) {
+                (*this->transition_callback)();
+            }
         }
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         auto rect = SDL_Rect { 0, 0, int(this->transition_width), SCREEN_HEIGHT };
         SDL_RenderFillRect(renderer, &rect);
     } else if (this->animation_state == TransitionAnimationState::waiting) {
-        if (this->transition_callback) {
-            (*this->transition_callback)();
-        }
-
         this->wait_timeout -= elapsedTime;
         if (this->wait_timeout <= 0.0) {
             this->animation_state = TransitionAnimationState::clearing;

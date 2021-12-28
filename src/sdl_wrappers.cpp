@@ -17,12 +17,16 @@ SDL_Texture* load_media(std::string const& filename, SDL_Renderer* renderer)
     return texture;
 }
 
-void initialize_sdl()
+SDL_Handler::SDL_Handler()
 {
-    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-        throw std::runtime_error("SDL could not initialize!");
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) {
+        throw std::runtime_error("ERROR: SDL could not be initialized! SDL Error: " + std::string(SDL_GetError()));
     }
     if (TTF_Init() != 0) {
         throw std::runtime_error("FAILED to initialize TTF library");
     }
+}
+
+SDL_Handler::~SDL_Handler() {
+    SDL_Quit();
 }

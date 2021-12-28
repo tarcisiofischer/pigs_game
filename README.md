@@ -1,7 +1,6 @@
 # Pig's Castle Game
 
-A small 2d sidescroller game written in C++ with SDL.
-Special thanks to [Pixel Frog](https://twitter.com/_pixelfrog) for the amazing art work.
+A small 2d sidescroller game written in C++ with SDL2.
 
 ![Pigs Castle](etc/example.gif)
 
@@ -25,3 +24,6 @@ cmake ..
 make
 ```
 
+## Special thanks
+- [Pixel Frog](https://twitter.com/_pixelfrog): Some Pixel art (background and characters)
+- [Sérgio](https://github.com/sergiogibe/): Background music & many cool suggestions

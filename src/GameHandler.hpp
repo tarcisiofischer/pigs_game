@@ -17,7 +17,8 @@ class SDL_Window;
 
 class GameHandler {
 public:
-    explicit GameHandler(SDL_Window* window);
+    GameHandler();
+    ~GameHandler();
 
     void process_inputs();
     void update();
@@ -59,6 +60,7 @@ private:
     static std::unique_ptr<TitleScreen> create_title_screen(GameHandler* game_handler);
 
 private:
+    SDL_Window* window;
     SDL_Renderer* renderer;
     GameTimeHandler time_handler;
     bool game_finished;
