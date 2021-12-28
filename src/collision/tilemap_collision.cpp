@@ -91,7 +91,7 @@ void compute_single_collission(TileCollisionInformation const& info, IGameCharac
             }
             character->handle_collision(collision_type, CollisionSide::LEFT_COLLISION);
         } else if (collision_region.y < tile_region.y + tile_region.h && old_collision_region.y >= tile_region.y + tile_region.h) {
-            character->set_position(current_position.x, tile_region.y + tile_region.h + 0.1);
+            character->set_position(current_position.x, tile_region.y + tile_region.h + 0.25);
             character->set_velocity(current_velocity.x, 0.0);
             character->handle_collision(collision_type, CollisionSide::BOTTOM_COLLISION);
         } else if (collision_region.y + collision_region.h > tile_region.y && old_collision_region.y + old_collision_region.h <= tile_region.y) {

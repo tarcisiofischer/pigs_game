@@ -26,12 +26,18 @@ int main()
     auto game_handler = GameHandler(window);
 
     while (true) {
+        Uint32 start_time = SDL_GetTicks();
+
         game_handler.process_inputs();
         game_handler.update();
         if (game_handler.is_game_finished()) {
             break;
         }
         game_handler.render();
+
+        if((1000 / 70.) > (SDL_GetTicks() - start_time)) {
+            SDL_Delay((1000 / 70.) - (SDL_GetTicks() - start_time));
+        }
     }
 
     SDL_DestroyWindow(window);

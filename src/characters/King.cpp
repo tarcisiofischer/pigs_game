@@ -159,7 +159,7 @@ void King::on_after_collision()
 {
     this->is_falling = (!this->is_grounded && this->velocity.y < 0.0);
     this->is_jumping = (!this->is_grounded && this->velocity.y > 0.0);
-    if (this->is_grounded && (this->position.y + 0.1) < this->old_position.y) {
+    if (this->is_grounded && (this->position.y + 0.5) < this->old_position.y) {
         this->just_touched_ground = true;
     }
 }
