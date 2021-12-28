@@ -1,4 +1,5 @@
 #include <AssetsRegistry.hpp>
+#include <SoundHandler.hpp>
 #include <characters/Pig.hpp>
 
 Pig::Pig(SDL_Renderer* renderer, double pos_x, double pos_y)
@@ -193,6 +194,7 @@ void Pig::start_taking_damage()
     if (this->on_start_taking_damage) {
         (*this->on_start_taking_damage)();
     }
+    sound_handler.play("hit");
 }
 
 void Pig::run_animation(double elapsed_time)

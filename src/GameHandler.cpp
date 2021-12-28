@@ -66,7 +66,7 @@ GameHandler::GameHandler()
     sound_handler.load();
 
     // TODO: Move this to the TitleScreen class
-    sound_handler.play("title_screen");
+    sound_handler.play_music("title_screen");
 }
 
 GameHandler::~GameHandler()

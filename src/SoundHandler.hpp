@@ -11,10 +11,12 @@ public:
     ~SoundHandler();
 
     void load();
+    void play_music(std::string const& music_name);
     void play(std::string const& sound_name);
 
 private:
-    std::unordered_map<std::string, Mix_Music*> registry;
+    std::unordered_map<std::string, Mix_Music*> music_registry;
+    std::unordered_map<std::string, Mix_Chunk*> sound_registry;
 };
 
 extern SoundHandler sound_handler;

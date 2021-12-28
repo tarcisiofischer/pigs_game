@@ -14,7 +14,7 @@ EntryLevel::EntryLevel(GameHandler& game_handler)
     , characters(build_game_characters(game_handler.get_renderer(), map))
     , game_handler(game_handler)
 {
-    sound_handler.play("forest");
+    sound_handler.play_music("forest");
 }
 
 GameMap& EntryLevel::get_map()

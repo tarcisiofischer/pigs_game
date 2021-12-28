@@ -33,3 +33,4 @@ cmake --build .
 ## Special thanks
 - [Pixel Frog](https://twitter.com/_pixelfrog): Some Pixel art (background and characters)
 - [Sérgio](https://github.com/sergiogibe/): Background music & many cool suggestions
+- [Void1](https://www.void1gaming.com/): Some of the sound effects
