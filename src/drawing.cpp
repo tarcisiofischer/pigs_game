@@ -1,4 +1,5 @@
 #include <drawing.hpp>
+#include <stdexcept>
 
 Vector2D<int> to_world_position(Vector2D<int> const& camera_position, Vector2D<int> const& size,
     Vector2D<int> const& camera_offset)

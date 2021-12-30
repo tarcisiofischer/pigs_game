@@ -8,7 +8,7 @@ Vector2D<int> camera_offset { 0, 0 };
 
 int main()
 {
-    SDL_Handler _();
+    SDL_Handler _;
     auto game_handler = GameHandler();
 
     while (true) {

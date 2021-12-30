@@ -8,6 +8,7 @@
 #include <Vector2D.hpp>
 #include <bitmap_font.hpp>
 #include <constants.hpp>
+#include <string>
 
 Vector2D<int> to_world_position(Vector2D<int> const& camera_position, Vector2D<int> const& size,
     Vector2D<int> const& camera_offset);
