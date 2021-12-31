@@ -172,7 +172,7 @@ public:
         , map_filename(map_filename)
         , bottom_panel_message("")
     {
-        this->sdl_window = SDL_CreateWindow("Pigs game - Map editor", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+        this->sdl_window = SDL_CreateWindow("Map editor", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
             1200, 600, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
         if (this->sdl_window == nullptr) {
             throw std::runtime_error("SDL Error: Window could not be created");
@@ -181,13 +181,13 @@ public:
         this->sdl_renderer = SDL_CreateRenderer(this->sdl_window, -1, SDL_RENDERER_ACCELERATED);
         SDL_SetRenderDrawBlendMode(this->sdl_renderer, SDL_BLENDMODE_BLEND);
 
-        this->camera_offset.x = -int(this->map.width * TILE_SIZE / 2 - 200);
-        this->camera_offset.y = int(this->map.height * TILE_SIZE / 2);
+        this->camera_offset.x = -int(this->map.width * TILE_SIZE / 2);
+        this->camera_offset.y = 0;
 
         auto load_spritesheet = [this](std::string const& filename) {
             return load_media("assets/sprites/" + filename, this->sdl_renderer);
         };
-        this->tileset = load_spritesheet("tileset.png");
+        this->tileset = load_spritesheet("tiles.png");
         this->foreground_set = load_spritesheet("foreground_set.png");
         this->interactables_set = load_media("assets/map_editor/interactables.png", this->sdl_renderer);
         this->monogram = load_spritesheet("monogram.png");
@@ -366,9 +366,9 @@ private:
                 // Background
                 {
                     auto tile_id = map.tilemap[i][j];
-                    auto offset = Vector2D<int> { TILE_SIZE * (tile_id % 12), TILE_SIZE * int(floor(tile_id / 12)) };
+                    auto offset = Vector2D<int> { TILE_SIZE * (tile_id % 4), TILE_SIZE * int(floor(tile_id / 4)) };
                     auto size = Vector2D<int> { TILE_SIZE, TILE_SIZE };
-                    draw_sprite(this->sdl_renderer, this->tileset, offset, world_position, size, camera_offset);
+                        draw_sprite(this->sdl_renderer, this->tileset, offset, world_position, size, camera_offset);
                 }
 
                 // Foreground
@@ -399,7 +399,7 @@ private:
                 // Check if selected
                 {
                     auto camera_position = to_camera_position(world_position, { TILE_SIZE, TILE_SIZE }, camera_offset);
-                    auto tile_region = Region2D<int> { camera_position.x, camera_position.y, TILE_SIZE, TILE_SIZE };
+                    auto tile_region = Region2D<int> { camera_position.x, camera_position.y, SCALE_SIZE * TILE_SIZE, SCALE_SIZE * TILE_SIZE };
                     if (this->check_mouse_is_over(tile_region)) {
                         SDL_SetRenderDrawColor(this->sdl_renderer, 250, 255, 255, 255);
                         auto sdl_rect = to_sdl_rect(tile_region);
@@ -440,7 +440,7 @@ private:
             SDL_SetRenderDrawColor(this->sdl_renderer, 250, 200, 150, 255);
             auto map_size = Vector2D<int> { TILE_SIZE * map.width, TILE_SIZE * map.height };
             auto map_position = to_camera_position({ 0, 0 }, map_size, camera_offset);
-            auto map_rect = SDL_Rect { map_position.x, map_position.y, map_size.x, map_size.y };
+            auto map_rect = SDL_Rect { map_position.x, map_position.y, SCALE_SIZE * map_size.x, SCALE_SIZE * map_size.y };
             SDL_RenderDrawRect(this->sdl_renderer, &map_rect);
         }
     }
@@ -452,7 +452,7 @@ private:
         world_mouse.y -= TILE_SIZE / 2;
         auto size = Vector2D<int> { TILE_SIZE, TILE_SIZE };
         if (this->selected_section == BACKGROUND_SECTION) {
-            auto offset = Vector2D<int> { TILE_SIZE * (selected_tile % 12), TILE_SIZE * int(floor(selected_tile / 12)) };
+            auto offset = Vector2D<int> { TILE_SIZE * (selected_tile % 4), TILE_SIZE * int(floor(selected_tile / 4)) };
             draw_sprite(this->sdl_renderer, this->tileset, offset, world_mouse, size, camera_offset);
         } else if (this->selected_section == FOREGROUND_SECTION) {
             auto offset = Vector2D<int> { TILE_SIZE * (selected_tile % 7), TILE_SIZE * int(floor(selected_tile / 7)) };
@@ -489,7 +489,7 @@ private:
         auto message = this->map_filename + " [" + std::to_string(this->map.width) + "x" + std::to_string(this->map.height) + "]"
                                                                                                                               " . Mouse position: "
             + std::to_string(mouse_on_world.x) + ", " + std::to_string(mouse_on_world.y) + " . " + this->bottom_panel_message;
-        gout(this->sdl_renderer, this->monogram, { 5, window_h - 15 }, message, { 255, 255, 255 });
+        gout(this->sdl_renderer, this->monogram, { 5, window_h - 15 }, message, { 255, 255, 255 }, false);
     }
 
     void draw_left_panel()
@@ -524,8 +524,8 @@ private:
         auto x_offset = 0;
         auto y_offset = 0;
         for (int i = 0; i < MAX_ELEMS; ++i) {
-            x_offset = 10 + i % MAX_X * (TILE_SIZE + 10);
-            y_offset = 10 + int(i / MAX_X) * (TILE_SIZE + 10);
+            x_offset = 10 + i % MAX_X * (SCALE_SIZE * TILE_SIZE + 10);
+            y_offset = 10 + int(i / MAX_X) * (SCALE_SIZE * TILE_SIZE + 10);
 
             auto tile_offset_i = (this->start_tile_id + i % MAX_X) * TILE_SIZE;
             auto tile_offset_j = (i / MAX_X) * TILE_SIZE;
@@ -538,13 +538,13 @@ private:
 
             for (auto const& [di, dj] : std::array<std::tuple<int, int>, 4> { { { +1, 0 }, { -1, 0 }, { 0, +1 }, { 0, -1 } } }) {
                 gout(this->sdl_renderer, this->monogram, { 10 + x_offset + 2 + di, 50 + y_offset + 2 + dj },
-                    std::to_string(tile_id), { 255, 255, 255 });
+                    std::to_string(tile_id), { 255, 255, 255 }, false);
             }
             gout(this->sdl_renderer, this->monogram, { 10 + x_offset + 2, 50 + y_offset + 2 }, std::to_string(tile_id),
-                DARK_PURPLE_COLOR);
+                DARK_PURPLE_COLOR, false);
 
             // Draw selected tile border (if selected)
-            auto tile_region = Region2D<int> { tile_position.x, tile_position.y, TILE_SIZE, TILE_SIZE };
+            auto tile_region = Region2D<int> { tile_position.x, tile_position.y, SCALE_SIZE * TILE_SIZE, SCALE_SIZE * TILE_SIZE };
             auto mouse_is_over = check_aabb_collision(tile_region.as<double>(),
                 Region2D<int> { this->mouse.position.x, this->mouse.position.y, 0, 0 }.as<double>());
             auto tile_is_selected = selected_tile == tile_id;
@@ -596,7 +596,7 @@ private:
 
 int main(int argc, char* argv[])
 {
-    SDL_Handler _();
+    SDL_Handler _;
 
     auto options = handle_args(argc, argv);
     std::cout << "Filename: " << options.filename;

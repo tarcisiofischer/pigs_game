@@ -2,7 +2,7 @@
 
 void AssetsRegistry::load(SDL_Renderer* renderer)
 {
-    this->tileset = load_media("assets/sprites/tileset.png", renderer);
+    this->tileset = load_media("assets/sprites/tiles.png", renderer);
     this->foreground_set = load_media("assets/sprites/foreground_set.png", renderer);
     this->lifebar = load_media("assets/sprites/lifebar.png", renderer);
     this->lifebar_heart = load_media("assets/sprites/small_heart18x14.png", renderer);

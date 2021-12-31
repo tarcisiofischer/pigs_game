@@ -23,6 +23,7 @@ public:
     void process_inputs();
     void update();
     void render();
+    void delay();
 
     inline bool is_game_finished() const
     {

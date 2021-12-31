@@ -16,6 +16,15 @@ struct TileCollisionInformation {
     std::function<void()> collision_callback;
 };
 
+using TileId = int;
+static auto const TILE_COLLISION_TYPE = std::unordered_map<TileId, CollisionType>{
+    {13, CollisionType::DANGEROUS_COLLISION},
+    {16, CollisionType::BOTTOM_ONLY_COLLISION},
+    {17, CollisionType::BOTTOM_ONLY_COLLISION},
+    {18, CollisionType::BOTTOM_ONLY_COLLISION},
+    {19, CollisionType::BOTTOM_ONLY_COLLISION}
+};
+
 TileCollisionInformation tile_info_from_position(GameMap const& map, Vector2D<double> const& position,
     IGameLevel& level, IGameCharacter* character)
 {
@@ -35,9 +44,11 @@ TileCollisionInformation tile_info_from_position(GameMap const& map, Vector2D<do
     }
 
     auto tile_id = map.tilemap[map.height - i - 1][j];
-    for (auto&& collision_tile_id : collision_tiles) {
-        if (tile_id == collision_tile_id) {
-            is_collideable = true;
+    if (tile_id != 0) {
+        is_collideable = true;
+        try {
+            collision_type = TILE_COLLISION_TYPE.at(tile_id);
+        } catch (std::out_of_range const& _) {
             collision_type = CollisionType::TILEMAP_COLLISION;
         }
     }
@@ -79,13 +90,13 @@ void compute_single_collission(TileCollisionInformation const& info, IGameCharac
         }
 
         if (collision_region.x + collision_region.w > tile_region.x && old_collision_region.x + old_collision_region.w <= tile_region.x) {
-            if (collision_type == CollisionType::TILEMAP_COLLISION) {
+            if (collision_type == CollisionType::TILEMAP_COLLISION || collision_type == CollisionType::DANGEROUS_COLLISION) {
                 character->set_position(tile_region.x - collision_region.w - 0.1, current_position.y);
                 character->set_velocity(0.0, current_velocity.y);
             }
             character->handle_collision(collision_type, CollisionSide::RIGHT_COLLISION);
         } else if (collision_region.x < tile_region.x + tile_region.w && old_collision_region.x >= tile_region.x + tile_region.w) {
-            if (collision_type == CollisionType::TILEMAP_COLLISION) {
+            if (collision_type == CollisionType::TILEMAP_COLLISION || collision_type == CollisionType::DANGEROUS_COLLISION) {
                 character->set_position(tile_region.x + tile_region.w + 0.1, current_position.y);
                 character->set_velocity(0.0, current_velocity.y);
             }
@@ -95,7 +106,7 @@ void compute_single_collission(TileCollisionInformation const& info, IGameCharac
             character->set_velocity(current_velocity.x, 0.0);
             character->handle_collision(collision_type, CollisionSide::BOTTOM_COLLISION);
         } else if (collision_region.y + collision_region.h > tile_region.y && old_collision_region.y + old_collision_region.h <= tile_region.y) {
-            if (collision_type == CollisionType::TILEMAP_COLLISION) {
+            if (collision_type == CollisionType::TILEMAP_COLLISION || collision_type == CollisionType::DANGEROUS_COLLISION) {
                 character->set_position(current_position.x, tile_region.y - collision_region.h - 0.1);
                 character->set_velocity(current_velocity.x, 0.0);
             }
@@ -119,6 +130,14 @@ void compute_tilemap_collisions(GameMap const& map, IGameCharacter* character, I
         }
     }
 
+    // Middle-bottom
+    {
+        auto tile_collision_info = tile_info_from_position(map, { collision_region.x + collision_region.w / 2, collision_region.y }, level, character);
+        if (tile_collision_info.is_collideable) {
+            compute_single_collission(tile_collision_info, character);
+        }
+    }
+
     // Right-bottom
     {
         auto tile_collision_info = tile_info_from_position(
@@ -128,10 +147,36 @@ void compute_tilemap_collisions(GameMap const& map, IGameCharacter* character, I
         }
     }
 
+    // Left-middle
+    {
+        auto tile_collision_info = tile_info_from_position(
+                map, { collision_region.x, collision_region.y + collision_region.h / 2 }, level, character);
+        if (tile_collision_info.is_collideable) {
+            compute_single_collission(tile_collision_info, character);
+        }
+    }
+
+    // Right-middle
+    {
+        auto tile_collision_info = tile_info_from_position(
+                map, { collision_region.x + collision_region.w, collision_region.y + collision_region.h / 2 }, level, character);
+        if (tile_collision_info.is_collideable) {
+            compute_single_collission(tile_collision_info, character);
+        }
+    }
+
     // Left-top
     {
         auto tile_collision_info = tile_info_from_position(
-            map, { collision_region.x, collision_region.y + collision_region.h }, level, character);
+                map, { collision_region.x, collision_region.y + collision_region.h }, level, character);
+        if (tile_collision_info.is_collideable) {
+            compute_single_collission(tile_collision_info, character);
+        }
+    }
+
+    // Middle-top
+    {
+        auto tile_collision_info = tile_info_from_position(map, { collision_region.x + collision_region.w / 2, collision_region.y + collision_region.h }, level, character);
         if (tile_collision_info.is_collideable) {
             compute_single_collission(tile_collision_info, character);
         }
@@ -140,7 +185,7 @@ void compute_tilemap_collisions(GameMap const& map, IGameCharacter* character, I
     // Right-top
     {
         auto tile_collision_info = tile_info_from_position(
-            map, { collision_region.x + collision_region.w, collision_region.y + collision_region.h }, level, character);
+                map, { collision_region.x + collision_region.w, collision_region.y + collision_region.h }, level, character);
         if (tile_collision_info.is_collideable) {
             compute_single_collission(tile_collision_info, character);
         }

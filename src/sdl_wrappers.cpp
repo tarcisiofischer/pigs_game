@@ -26,5 +26,6 @@ SDL_Handler::SDL_Handler()
 }
 
 SDL_Handler::~SDL_Handler() {
+    TTF_Quit();
     SDL_Quit();
 }

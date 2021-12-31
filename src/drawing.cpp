@@ -63,13 +63,14 @@ int gstr_width(std::string const& text)
 }
 
 Region2D<int> gout(SDL_Renderer* renderer, SDL_Texture* spritesheet, Vector2D<int> const& static_camera_position,
-    std::string const& message, RGBColor const& text_color)
+    std::string const& message, RGBColor const& text_color, bool scale)
 {
+    auto scale_size = scale ? SCALE_SIZE : 1;
     auto gout_region = Region2D<int> { static_camera_position.x, static_camera_position.y, 0, 0 };
 
     auto size = Vector2D<int> { 6, 9 };
     auto srcrect = SDL_Rect { 0, 0, size.x, size.y };
-    auto dstrect = SDL_Rect { static_camera_position.x, static_camera_position.y, size.x * SCALE_SIZE, size.y * SCALE_SIZE };
+    auto dstrect = SDL_Rect { static_camera_position.x, static_camera_position.y, size.x * scale_size, size.y * scale_size };
     auto const& charmap = MonogramFont::charmap();
 
     SDL_SetTextureColorMod(spritesheet, text_color.r, text_color.g, text_color.b);
@@ -84,8 +85,8 @@ Region2D<int> gout(SDL_Renderer* renderer, SDL_Texture* spritesheet, Vector2D<in
         srcrect.x = size.x * charmap_pos.x;
         srcrect.y = size.y * charmap_pos.y;
         SDL_RenderCopy(renderer, spritesheet, &srcrect, &dstrect);
-        dstrect.x += size.x * SCALE_SIZE;
-        gout_region.w += size.x * SCALE_SIZE;
+        dstrect.x += size.x * scale_size;
+        gout_region.w += size.x * scale_size;
     }
     gout_region.h += size.y;
 

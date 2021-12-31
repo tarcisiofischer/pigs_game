@@ -34,7 +34,7 @@ void draw_line(SDL_Renderer* renderer, Vector2D<int> const& start_position, Vect
 int gstr_width(std::string const& text);
 
 Region2D<int> gout(SDL_Renderer* renderer, SDL_Texture* spritesheet, Vector2D<int> const& static_camera_position,
-    std::string const& message, RGBColor const& text_color);
+    std::string const& message, RGBColor const& text_color, bool scale=true);
 
 template <typename T>
 SDL_Rect to_sdl_rect(Region2D<T> const& region)

@@ -110,7 +110,6 @@ add_executable(
 
     collision/aabb.hpp
 )
-target_compile_definitions(MapEditor PRIVATE FORCE_SCALE_SIZE=1)
 
 include_directories(
     ${SDL2_INCLUDE_DIRS}

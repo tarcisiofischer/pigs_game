@@ -14,12 +14,12 @@ namespace {
     SDL_Window* create_window()
     {
         auto* window = SDL_CreateWindow(
-                WINDOW_TITLE,
-                SDL_WINDOWPOS_UNDEFINED,
-                SDL_WINDOWPOS_UNDEFINED,
-                SCREEN_WIDTH,
-                SCREEN_HEIGHT,
-                SDL_WINDOW_SHOWN);
+            WINDOW_TITLE,
+            SDL_WINDOWPOS_UNDEFINED,
+            SDL_WINDOWPOS_UNDEFINED,
+            SCREEN_WIDTH,
+            SCREEN_HEIGHT,
+            SDL_WINDOW_SHOWN);
         if (window == nullptr) {
             err("Window could not be created");
         }
@@ -61,8 +61,8 @@ GameHandler::GameHandler()
     , screen(GameHandler::create_title_screen(this))
     , game_finished(false)
 {
-    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-    assets_registry.load(renderer);
+    SDL_SetRenderDrawBlendMode(this->renderer, SDL_BLENDMODE_BLEND);
+    assets_registry.load(this->renderer);
     sound_handler.load();
 
     // TODO: Move this to the TitleScreen class
@@ -103,4 +103,12 @@ void GameHandler::render()
     this->screen->render(this->renderer, elapsed_time);
     this->transition_animation.run(renderer, elapsed_time);
     SDL_RenderPresent(this->renderer);
+}
+
+void GameHandler::delay()
+{
+    auto elapsed_time = this->time_handler.get_elapsed_time();
+    if (elapsed_time < 1. / 70.) {
+        SDL_Delay(1000 * (1 / 70. - elapsed_time));
+    }
 }

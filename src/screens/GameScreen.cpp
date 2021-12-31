@@ -41,26 +41,23 @@ void GameScreen::render(SDL_Renderer* renderer, double elapsed_time)
     auto player = this->player();
 
     auto shake = this->game_handler.get_window_shaker().get_shake();
-    // TODO PIG-11: Only draw what's in the screen
     for (int i = 0; i < map.height; ++i) {
         for (int j = 0; j < map.width; ++j) {
             // Background
             {
                 auto tile_id = map.tilemap[i][j];
-                auto offset = Vector2D<int> { TILE_SIZE * (tile_id % 12), TILE_SIZE * int(floor(tile_id / 12)) };
+                auto offset = Vector2D<int> { TILE_SIZE * (tile_id % 4), TILE_SIZE * int(floor(tile_id / 4)) };
                 auto world_position = Vector2D<int> { TILE_SIZE * j + shake.x, TILE_SIZE * (map.height - i - 1) + shake.y };
                 auto size = Vector2D<int> { TILE_SIZE, TILE_SIZE };
                 draw_sprite(renderer, assets_registry.tileset, offset, world_position, size, camera_offset);
 
                 if (this->enable_debug) {
                     SDL_SetRenderDrawColor(renderer, 255, 0, 0, 40);
-                    for (auto&& collision_tile_id : collision_tiles) {
-                        if (tile_id == collision_tile_id) {
-                            auto camera_position = to_camera_position(world_position, size, camera_offset);
-                            auto dstrect = SDL_Rect { camera_position.x, camera_position.y, SCALE_SIZE * size.x,
-                                                      SCALE_SIZE * size.y };
-                            SDL_RenderFillRect(renderer, &dstrect);
-                        }
+                    if (tile_id != 0) {
+                        auto camera_position = to_camera_position(world_position, size, camera_offset);
+                        auto dstrect = SDL_Rect { camera_position.x, camera_position.y, SCALE_SIZE * size.x,
+                                                  SCALE_SIZE * size.y };
+                        SDL_RenderFillRect(renderer, &dstrect);
                     }
                 }
             }
