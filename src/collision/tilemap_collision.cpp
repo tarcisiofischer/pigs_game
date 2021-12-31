@@ -35,13 +35,13 @@ TileCollisionInformation tile_info_from_position(GameMap const& map, Vector2D<do
     auto tile_region = Region2D<double> { double(tile_world_position.x), double(tile_world_position.y), double(TILE_SIZE),
         double(TILE_SIZE) };
 
+    if (i < 0 || i > map.height || j < 0 || j > map.width) {
+        return { tile_region, true, CollisionType::TILEMAP_COLLISION };
+    }
+
     auto is_collideable = false;
     auto collision_type = CollisionType::NO_COLLISION;
     auto collision_callback = std::function<void()>();
-
-    if (map.height - i - 1 < 0 || j < 0) {
-        return { tile_region, is_collideable, collision_type };
-    }
 
     auto tile_id = map.tilemap[map.height - i - 1][j];
     if (tile_id != 0) {

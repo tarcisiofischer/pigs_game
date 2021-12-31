@@ -31,6 +31,10 @@ void GameScreen::update(double elapsed_time)
 
 void GameScreen::render(SDL_Renderer* renderer, double elapsed_time)
 {
+    // TODO: Get color from level
+    SDL_SetRenderDrawColor(renderer, 89, 157, 84, 255);
+    SDL_RenderClear(renderer);
+
     if (this->enable_debug) {
         this->debug_messages.clear();
         this->debug_messages.push_back("FPS: " + std::to_string(this->game_handler.get_time_handler().get_fps()));
