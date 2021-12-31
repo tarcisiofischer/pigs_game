@@ -9,6 +9,7 @@ void AssetsRegistry::load(SDL_Renderer* renderer)
     this->door = load_media("assets/sprites/door46x56.png", renderer);
     this->monogram = load_media("assets/sprites/monogram.png", renderer);
     this->talk_baloon = load_media("assets/sprites/talk_baloon.png", renderer);
+    this->forest_background = load_media("assets/sprites/forest_background.png", renderer);
 }
 
 AssetsRegistry::~AssetsRegistry()
@@ -20,6 +21,7 @@ AssetsRegistry::~AssetsRegistry()
     SDL_DestroyTexture(this->door);
     SDL_DestroyTexture(this->monogram);
     SDL_DestroyTexture(this->talk_baloon);
+    SDL_DestroyTexture(this->forest_background);
 }
 
 AssetsRegistry assets_registry;

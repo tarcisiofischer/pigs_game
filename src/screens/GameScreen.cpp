@@ -40,10 +40,20 @@ void GameScreen::render(SDL_Renderer* renderer, double elapsed_time)
     auto const& game_characters = this->active_lvl->get_characters();
     auto player = this->player();
 
+    // TODO: Dynamically get background
+    // TODO: Parallax effect
+    {
+        for (int i = 0; i < ceil(map.width * TILE_SIZE * SCALE_SIZE / 224); ++i) {
+            auto offset = Vector2D<int> { 0, 0 };
+            auto world_position = Vector2D<int> { 224 * i, 0 };
+            draw_sprite(renderer, assets_registry.forest_background, offset, world_position, Vector2D<int> { 224, 320 }, camera_offset);
+        }
+    }
+
     auto shake = this->game_handler.get_window_shaker().get_shake();
     for (int i = 0; i < map.height; ++i) {
         for (int j = 0; j < map.width; ++j) {
-            // Background
+            // Collision layer
             {
                 auto tile_id = map.tilemap[i][j];
                 auto offset = Vector2D<int> { TILE_SIZE * (tile_id % 4), TILE_SIZE * int(floor(tile_id / 4)) };

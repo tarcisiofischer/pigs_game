@@ -16,6 +16,7 @@ struct AssetsRegistry {
     SDL_Texture* door;
     SDL_Texture* monogram;
     SDL_Texture* talk_baloon;
+    SDL_Texture* forest_background;
 };
 
 extern AssetsRegistry assets_registry;
