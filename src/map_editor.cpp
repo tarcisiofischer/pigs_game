@@ -11,6 +11,7 @@
 #include <sdl_wrappers.hpp>
 #include <string>
 #include <vector>
+#include <optional>
 
 auto constexpr BACKGROUND_SECTION = 1;
 auto constexpr FOREGROUND_SECTION = 2;
