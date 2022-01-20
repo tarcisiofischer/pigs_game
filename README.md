@@ -1,5 +1,7 @@
 # Pig's Castle Game
 
+[![CMake](https://github.com/tarcisiofischer/pigs_game/actions/workflows/cmake.yml/badge.svg?branch=master)](https://github.com/tarcisiofischer/pigs_game/actions/workflows/cmake.yml)
+
 A small 2d sidescroller game written in C++ with SDL2.
 
 ![Pigs Castle](etc/example.gif)
