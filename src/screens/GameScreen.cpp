@@ -75,15 +75,6 @@ void GameScreen::render(SDL_Renderer* renderer, double elapsed_time)
                     }
                 }
             }
-
-            // Foreground
-            {
-                auto tile_id = map.foreground[i][j];
-                auto offset = Vector2D<int> { TILE_SIZE * (tile_id % 7), TILE_SIZE * int(floor(tile_id / 7)) };
-                auto world_position = Vector2D<int> { TILE_SIZE * j + shake.x, TILE_SIZE * (map.height - i - 1) + shake.y };
-                auto size = Vector2D<int> { TILE_SIZE, TILE_SIZE };
-                draw_sprite(renderer, assets_registry.foreground_set, offset, world_position, size, camera_offset);
-            }
         }
     }
 

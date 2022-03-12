@@ -16,11 +16,6 @@ void save_map(GameMap const& map, std::string const& filename)
             bin_write(map.tilemap[i][j]);
         }
     }
-    for (int i = 0; i < map.height; ++i) {
-        for (int j = 0; j < map.width; ++j) {
-            bin_write(map.foreground[i][j]);
-        }
-    }
     bin_write(map.interactables.size());
     for (auto const& interactable : map.interactables) {
         bin_write(interactable.position.x);
@@ -49,13 +44,6 @@ GameMap load_map(std::string const& filename)
     for (int i = 0; i < map.height; ++i) {
         for (int j = 0; j < map.width; ++j) {
             bin_read_nextint(map.tilemap[i][j]);
-        }
-    }
-
-    map.foreground = std::vector<std::vector<int>>(map.height, std::vector<int>(map.width));
-    for (int i = 0; i < map.height; ++i) {
-        for (int j = 0; j < map.width; ++j) {
-            bin_read_nextint(map.foreground[i][j]);
         }
     }
 

@@ -4,7 +4,6 @@
 enum class CollisionType {
     NO_COLLISION = 0,
     TILEMAP_COLLISION = 1,
-    FOREGROUND_COLLISION = 2,
     BOTTOM_ONLY_COLLISION = 3,
     DANGEROUS_COLLISION = 4
 };
