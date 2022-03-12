@@ -18,6 +18,7 @@ King::King(SDL_Renderer* renderer, double pos_x, double pos_y)
     , is_attacking(false)
     , just_touched_ground(false)
     , is_taking_damage(false)
+    , after_taking_damage(false)
     , is_dying(false)
     , is_dead(false)
 {
