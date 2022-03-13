@@ -10,10 +10,8 @@ struct AssetsRegistry {
     ~AssetsRegistry();
 
     SDL_Texture* tileset;
-    SDL_Texture* foreground_set;
     SDL_Texture* lifebar;
     SDL_Texture* lifebar_heart;
-    SDL_Texture* door;
     SDL_Texture* monogram;
     SDL_Texture* talk_baloon;
     SDL_Texture* forest_background;

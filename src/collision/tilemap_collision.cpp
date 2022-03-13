@@ -53,23 +53,6 @@ TileCollisionInformation tile_info_from_position(GameMap const& map, Vector2D<do
         }
     }
 
-    // Only check foreground collision if no background collision is present
-    if (!is_collideable) {
-        auto foreground_id = map.foreground[map.height - i - 1][j];
-        for (auto&& collision_tile_id : foreground_collision_tiles) {
-            if (foreground_id == collision_tile_id) {
-                is_collideable = true;
-                collision_type = CollisionType::FOREGROUND_COLLISION;
-
-                // TODO: Fix special collideable callback handling
-                if (collision_tile_id == 21) {
-                    auto collision_callback_id = 1;
-                    collision_callback = level.get_collision_callback(collision_callback_id, character);
-                }
-            }
-        }
-    }
-
     return { tile_region, is_collideable, collision_type, collision_callback };
 }
 

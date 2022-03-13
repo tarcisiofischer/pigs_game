@@ -14,7 +14,6 @@
 #include <optional>
 
 auto constexpr BACKGROUND_SECTION = 1;
-auto constexpr FOREGROUND_SECTION = 2;
 auto constexpr INTERACTABLES_SECTION = 3;
 
 auto constexpr LIGHT_GRAY_COLOR = RGBColor { 102, 102, 102 };
@@ -189,7 +188,6 @@ public:
             return load_media("assets/sprites/" + filename, this->sdl_renderer);
         };
         this->tileset = load_spritesheet("tiles.png");
-        this->foreground_set = load_spritesheet("foreground_set.png");
         this->interactables_set = load_media("assets/map_editor/interactables.png", this->sdl_renderer);
         this->monogram = load_spritesheet("monogram.png");
 
@@ -218,27 +216,14 @@ public:
         this->tm0 = Button(this->sdl_renderer, { 20, 460 }, { 14, 14 }, PURPLE_COLOR, "assets/map_editor/tm0.png");
         this->tm0.register_on_mouse_clicked(
             [this](Button&, MouseState const&) { this->selected_section = BACKGROUND_SECTION; });
-        this->tm1 = Button(this->sdl_renderer, { 36, 460 }, { 14, 14 }, PURPLE_COLOR, "assets/map_editor/tm1.png");
-        this->tm1.register_on_mouse_clicked(
-            [this](Button&, MouseState const&) { this->selected_section = FOREGROUND_SECTION; });
         this->tmI = Button(this->sdl_renderer, { 52, 460 }, { 14, 14 }, PURPLE_COLOR, "assets/map_editor/tmI.png");
         this->tmI.register_on_mouse_clicked(
             [this](Button&, MouseState const&) { this->selected_section = INTERACTABLES_SECTION; });
 
         this->fill_all_button = Button(this->sdl_renderer, { 134, 460 }, { 14, 14 }, PURPLE_COLOR, "assets/map_editor/fill_all.png");
         this->fill_all_button.register_on_mouse_clicked([this](Button&, MouseState const&) {
-            if (mouse.just_left_clicked && this->selected_tile != -1 && (this->selected_section == BACKGROUND_SECTION || this->selected_section == FOREGROUND_SECTION)) {
-                auto* selected_tilemap = ([this]() {
-                    if (this->selected_section == BACKGROUND_SECTION) {
-                        return &this->map.tilemap;
-                    } else {
-                        if (this->selected_section != FOREGROUND_SECTION) {
-                            throw std::runtime_error("Unknown selected_section state");
-                        }
-                        return &this->map.foreground;
-                    }
-                })();
-
+            if (mouse.just_left_clicked && this->selected_tile != -1 && this->selected_section == BACKGROUND_SECTION) {
+                auto* selected_tilemap = &this->map.tilemap;
                 for (int i = 0; i < this->map.height; ++i) {
                     for (int j = 0; j < this->map.width; ++j) {
                         (*selected_tilemap)[i][j] = this->selected_tile;
@@ -282,7 +267,6 @@ private:
         this->save_button.update(this->mouse);
 
         this->tm0.update(this->mouse);
-        this->tm1.update(this->mouse);
         this->tmI.update(this->mouse);
         this->fill_all_button.update(this->mouse);
         this->left_arrow_button.update(this->mouse);
@@ -371,14 +355,6 @@ private:
                     auto size = Vector2D<int> { TILE_SIZE, TILE_SIZE };
                         draw_sprite(this->sdl_renderer, this->tileset, offset, world_position, size, camera_offset);
                 }
-
-                // Foreground
-                {
-                    auto tile_id = map.foreground[i][j];
-                    auto offset = Vector2D<int> { TILE_SIZE * (tile_id % 7), TILE_SIZE * int(floor(tile_id / 7)) };
-                    auto size = Vector2D<int> { TILE_SIZE, TILE_SIZE };
-                    draw_sprite(this->sdl_renderer, this->foreground_set, offset, world_position, size, camera_offset);
-                }
             }
         }
 
@@ -409,8 +385,6 @@ private:
                         if (this->mouse.left_clicked && this->selected_tile != -1) {
                             if (selected_section == BACKGROUND_SECTION) {
                                 this->map.tilemap[i][j] = this->selected_tile;
-                            } else if (selected_section == FOREGROUND_SECTION) {
-                                this->map.foreground[i][j] = this->selected_tile;
                             }
                         }
                         if (this->mouse.just_left_clicked && this->selected_tile != -1) {
@@ -455,9 +429,6 @@ private:
         if (this->selected_section == BACKGROUND_SECTION) {
             auto offset = Vector2D<int> { TILE_SIZE * (selected_tile % 4), TILE_SIZE * int(floor(selected_tile / 4)) };
             draw_sprite(this->sdl_renderer, this->tileset, offset, world_mouse, size, camera_offset);
-        } else if (this->selected_section == FOREGROUND_SECTION) {
-            auto offset = Vector2D<int> { TILE_SIZE * (selected_tile % 7), TILE_SIZE * int(floor(selected_tile / 7)) };
-            draw_sprite(this->sdl_renderer, this->foreground_set, offset, world_mouse, size, camera_offset);
         } else if (this->selected_section == INTERACTABLES_SECTION) {
             auto offset = Vector2D<int> { TILE_SIZE * (selected_tile % 7), TILE_SIZE * int(floor(selected_tile / 7)) };
             draw_sprite(this->sdl_renderer, this->interactables_set, offset, world_mouse, size, camera_offset);
@@ -509,8 +480,6 @@ private:
         auto* selected_tileset = ([this]() -> SDL_Texture* {
             if (this->selected_section == BACKGROUND_SECTION) {
                 return this->tileset;
-            } else if (this->selected_section == FOREGROUND_SECTION) {
-                return this->foreground_set;
             } else if (this->selected_section == INTERACTABLES_SECTION) {
                 return this->interactables_set;
             }
@@ -560,7 +529,6 @@ private:
             }
         }
         this->tm0.draw();
-        this->tm1.draw();
         this->tmI.draw();
         this->left_arrow_button.draw();
         this->right_arrow_button.draw();
@@ -576,7 +544,6 @@ private:
     int selected_tile;
     int selected_section;
     SDL_Texture* tileset;
-    SDL_Texture* foreground_set;
     SDL_Texture* interactables_set;
     SDL_Texture* monogram;
     std::string map_filename;
@@ -591,7 +558,6 @@ private:
     Button right_arrow_button;
     Button fill_all_button;
     Button tm0;
-    Button tm1;
     Button tmI;
 };
 
