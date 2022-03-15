@@ -186,13 +186,13 @@ void King::handle_controller(GameController const& controller)
         this->running_side = 0;
     }
 
-    if (controller.is_pressed(ControllerAction::UpKey)) {
+    if (controller.just_pressed(ControllerAction::UpKey)) {
         if (!this->is_jumping && !this->is_falling) {
             this->start_jumping = true;
         }
     }
 
-    if (controller.is_pressed(ControllerAction::ActionKey)) {
+    if (controller.just_pressed(ControllerAction::ActionKey)) {
         if (!this->is_attacking) {
             this->is_attacking = true;
         }
@@ -206,16 +206,17 @@ void King::register_on_dead_callback(const std::function<void()>& f)
 
 void King::update(double elapsedTime)
 {
-    // velocity x setup
+    // Update velocity x
     if (!this->is_taking_damage && !this->is_dying && !this->is_dead) {
-        if (this->running_side == +1)
+        if (this->running_side == +1) {
             this->velocity.x = +0.2;
-        else if (this->running_side == -1)
+        } else if (this->running_side == -1) {
             this->velocity.x = -0.2;
-        else
+        } else {
             this->velocity.x = 0.0;
+        }
 
-        // velocity y setup
+        // Update velocity y
         if (this->start_jumping) {
             this->start_jumping = false;
             this->is_grounded = false;
@@ -227,9 +228,12 @@ void King::update(double elapsedTime)
     }
     this->velocity.y += gravity * elapsedTime;
 
-    // Position setup
+    // Update Position
     this->old_position = this->position;
     this->position += this->velocity * elapsedTime;
+    if (this->velocity.y < -0.1) {
+        this->is_grounded = false;
+    }
 
     this->after_taking_damage_timeout.update(elapsedTime);
 }
