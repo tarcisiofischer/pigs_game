@@ -6,7 +6,10 @@
 #include <map>
 
 enum class ControllerAction {
-    ActionKey,
+    StartKey,
+    DashKey,
+    AttackKey,
+    JumpKey,
     UpKey,
     DownKey,
     LeftKey,

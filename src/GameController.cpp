@@ -3,8 +3,11 @@
 GameController::GameController()
 {
     this->keyconfig = {
+        { ControllerAction::StartKey, SDL_SCANCODE_RETURN },
         { ControllerAction::DebugKey, SDL_SCANCODE_TAB },
-        { ControllerAction::ActionKey, SDL_SCANCODE_LCTRL },
+        { ControllerAction::AttackKey, SDL_SCANCODE_LCTRL },
+        { ControllerAction::DashKey, SDL_SCANCODE_LSHIFT },
+        { ControllerAction::JumpKey, SDL_SCANCODE_SPACE },
         { ControllerAction::UpKey, SDL_SCANCODE_UP },
         { ControllerAction::DownKey, SDL_SCANCODE_DOWN },
         { ControllerAction::LeftKey, SDL_SCANCODE_LEFT },

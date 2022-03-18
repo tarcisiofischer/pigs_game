@@ -180,6 +180,11 @@ void GameScreen::set_active_level(std::unique_ptr<IGameLevel>&& lvl)
         auto& window_shaker = this->game_handler.get_window_shaker();
         window_shaker.start_shake();
     };
+
+    player->on_start_dashing = [this]() {
+        auto& window_shaker = this->game_handler.get_window_shaker();
+        window_shaker.start_shake();
+    };
 }
 
 King* GameScreen::player()

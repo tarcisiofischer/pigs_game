@@ -40,7 +40,7 @@ void TitleScreen::handle_controller(GameController const& controller)
         ((int)(this->selected_menu) + direction) % (int)SelectedMenu::SIZE
     );
 
-    if (controller.just_pressed(ControllerAction::ActionKey)) {
+    if (controller.just_pressed(ControllerAction::StartKey)) {
         this->action_key_pressed = true;
     }
 }
