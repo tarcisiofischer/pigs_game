@@ -9,3 +9,6 @@ cmake_install.cmake
 /.idea/
 /Testing/
 /PigsGame.cbp
+PigsGame
+MapEditor
+compile_commands.json
