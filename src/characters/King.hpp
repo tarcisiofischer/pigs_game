@@ -24,8 +24,9 @@ public:
     static auto constexpr TAKING_DAMAGE_ANIMATION = 6;
     static auto constexpr DYING_ANIMATION = 7;
     static auto constexpr DEAD_ANIMATION = 8;
+    static auto constexpr DASHING_ANIMATION = 9;
 
-    static auto constexpr collision_size = Vector2D<int> { 20, 27 };
+    static auto constexpr collision_size = Vector2D<int> { 13, 27 };
 
     static auto constexpr attack_region_offset_x = 30.;
     static auto constexpr attack_region_offset_y = -10.;
@@ -33,7 +34,15 @@ public:
     static auto constexpr attack_region_h = 20.;
 
     static auto constexpr reference_point = Vector2D<int> { 41, 30 };
-    static auto constexpr spritesheet_offset = Vector2D<int> { 38, 32 };
+    static auto constexpr spritesheet_offset = Vector2D<int> { 41, 32 };
+
+    static auto constexpr walk_speed = 0.12;
+    static auto constexpr dash_speed = 0.25;
+    static auto constexpr jump_speed = 0.34;
+    static auto constexpr double_jump_speed = 0.24;
+    static auto constexpr reset_dash_timeout = 200.0;
+    static auto constexpr reset_no_dash_timeout = 500.0;
+
 
 public:
     King(SDL_Renderer* renderer, double pos_x, double pos_y);
@@ -73,8 +82,13 @@ public:
     bool after_taking_damage;
     bool is_dying;
     bool is_dead;
+    bool start_dashing;
+    double dashing_timeout;
+    double no_dash_timeout;
+    int jump_count;
     std::optional<std::function<void()>> on_dead_callback;
     std::optional<std::function<void()>> on_start_taking_damage;
+    std::optional<std::function<void()>> on_start_dashing;
 };
 
 #endif

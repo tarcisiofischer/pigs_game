@@ -21,6 +21,10 @@ King::King(SDL_Renderer* renderer, double pos_x, double pos_y)
     , after_taking_damage(false)
     , is_dying(false)
     , is_dead(false)
+    , start_dashing(false)
+    , dashing_timeout(-0.1)
+    , no_dash_timeout(-0.1)
+    , jump_count(0)
 {
     auto register_animation = [&](int id, std::vector<std::tuple<int, int>> const& frames, double time) {
         this->animations.insert(std::make_pair(id, Animation(this->spritesheet, frames, 96, 96, time)));
@@ -91,6 +95,11 @@ King::King(SDL_Renderer* renderer, double pos_x, double pos_y)
             { 5, 0 },
         },
         100.);
+    register_animation(King::DASHING_ANIMATION,
+       {
+           { 4, 2 },
+       },
+       100.);
 
     this->animations.at(ATTACKING_ANIMATION).set_on_finish_animation_callback([this]() { this->is_attacking = false; });
     this->animations.at(JUST_TOUCHED_GROUND_ANIMATION).set_on_finish_animation_callback([this]() {
@@ -153,6 +162,7 @@ void King::handle_collision(const CollisionType& type, const CollisionSide& side
 
     if ((type == CollisionType::TILEMAP_COLLISION || type == CollisionType::BOTTOM_ONLY_COLLISION) && side == CollisionSide::BOTTOM_COLLISION) {
         this->is_grounded = true;
+        this->jump_count = 0;
     }
 
     if (type == CollisionType::DANGEROUS_COLLISION && side == CollisionSide::BOTTOM_COLLISION) {
@@ -186,15 +196,28 @@ void King::handle_controller(GameController const& controller)
         this->running_side = 0;
     }
 
-    if (controller.just_pressed(ControllerAction::UpKey)) {
-        if (!this->is_jumping && !this->is_falling) {
+    if (controller.just_pressed(ControllerAction::JumpKey)) {
+        if (
+            (!this->is_jumping && !this->is_falling) ||
+            (this->jump_count < 2 && this->is_jumping) ||
+            (this->jump_count < 2 && this->is_falling)
+        ) {
             this->start_jumping = true;
         }
     }
 
-    if (controller.just_pressed(ControllerAction::ActionKey)) {
+    if (controller.just_pressed(ControllerAction::AttackKey)) {
         if (!this->is_attacking) {
             this->is_attacking = true;
+        }
+    }
+
+    if (controller.just_pressed(ControllerAction::DashKey)) {
+        if (!this->start_dashing && this->dashing_timeout <= 0.0 && this->no_dash_timeout <= 0.0) {
+            this->start_dashing = true;
+            if (this->on_start_dashing) {
+                (*this->on_start_dashing)();
+            }
         }
     }
 }
@@ -208,21 +231,45 @@ void King::update(double elapsedTime)
 {
     // Update velocity x
     if (!this->is_taking_damage && !this->is_dying && !this->is_dead) {
-        if (this->running_side == +1) {
-            this->velocity.x = +0.2;
-        } else if (this->running_side == -1) {
-            this->velocity.x = -0.2;
-        } else {
-            this->velocity.x = 0.0;
-        }
+        this->velocity.x = this->running_side * King::walk_speed;
 
         // Update velocity y
         if (this->start_jumping) {
             this->start_jumping = false;
             this->is_grounded = false;
-            this->velocity.y += 0.4;
+            if (this->jump_count == 0) {
+                this->velocity.y = King::jump_speed;
+            } else if (this->jump_count == 1) {
+                this->velocity.y = King::double_jump_speed;
+            }
+
+            // Cancel dashing
+            if (this->dashing_timeout > 0.0) {
+                this->start_dashing = false;
+                this->dashing_timeout = 0.0;
+                this->no_dash_timeout = King::reset_no_dash_timeout;
+            }
+
+            this->jump_count += 1;
+        }
+
+        if (this->start_dashing) {
+            this->dashing_timeout = King::reset_dash_timeout;
+            this->start_dashing = false;
+        }
+        if (this->dashing_timeout > 0.0) {
+            this->velocity.x = this->face * King::dash_speed;
+            this->velocity.y = 0.0;
+            this->dashing_timeout -= elapsedTime;
+            if (this->dashing_timeout <= 0.0) {
+                this->no_dash_timeout = King::reset_no_dash_timeout;
+            }
+        }
+        if (this->no_dash_timeout > 0.0) {
+            this->no_dash_timeout -= elapsedTime;
         }
     }
+
     if (this->is_dead) {
         this->velocity.x = 0.0;
     }
@@ -231,8 +278,9 @@ void King::update(double elapsedTime)
     // Update Position
     this->old_position = this->position;
     this->position += this->velocity * elapsedTime;
-    if (this->velocity.y < -0.1) {
+    if (this->is_grounded && this->velocity.y < -0.1) {
         this->is_grounded = false;
+        this->jump_count += 1;
     }
 
     this->after_taking_damage_timeout.update(elapsedTime);
@@ -240,10 +288,12 @@ void King::update(double elapsedTime)
 
 void King::start_taking_damage()
 {
-    this->velocity.x = 0.05;
+    this->velocity.x = -this->face * 0.05;
     this->velocity.y = 0.1;
     this->is_taking_damage = true;
     this->life -= 1;
+    this->start_dashing = false;
+    this->dashing_timeout = 0.0;
     if (this->on_start_taking_damage) {
         (*this->on_start_taking_damage)();
     }
@@ -260,6 +310,9 @@ void King::run_animation(double elapsedTime)
         }
         if (this->is_taking_damage) {
             return TAKING_DAMAGE_ANIMATION;
+        }
+        if (this->dashing_timeout > 0.0) {
+            return DASHING_ANIMATION;
         }
         if (this->just_touched_ground) {
             return JUST_TOUCHED_GROUND_ANIMATION;

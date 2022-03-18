@@ -76,7 +76,7 @@ void Talk::run(IGameCharacter* c, SceneScript* script, double elapsed_time)
         this->state = TalkState::Talking;
     } else if (this->state == TalkState::Talking) {
         auto keystates = SDL_GetKeyboardState(NULL);
-        if (game_controller.get_state(ControllerAction::ActionKey) == ControllerState::JustPressed) {
+        if (game_controller.get_state(ControllerAction::AttackKey) == ControllerState::JustPressed) {
             this->state = TalkState::Finished;
             pig->is_talking = false;
         }
