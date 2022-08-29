@@ -7,6 +7,7 @@
 #include <constants.hpp>
 #include <functional>
 #include <levels/IGameLevel.hpp>
+#include <stdexcept>
 
 namespace {
 struct TileCollisionInformation {
