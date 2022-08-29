@@ -21,6 +21,8 @@ auto constexpr GRAY_COLOR = RGBColor { 72, 72, 72 };
 auto constexpr DARK_PURPLE_COLOR = RGBColor { 45, 35, 60 };
 auto constexpr PURPLE_COLOR = RGBColor { 63, 56, 81 };
 
+auto constexpr LEFT_PANEL_WIDTH = 200;
+
 struct Options {
     std::string filename;
 
@@ -383,14 +385,18 @@ private:
                         SDL_RenderDrawRect(this->sdl_renderer, &sdl_rect);
 
                         if (this->mouse.left_clicked && this->selected_tile != -1) {
-                            if (selected_section == BACKGROUND_SECTION) {
-                                this->map.tilemap[i][j] = this->selected_tile;
+                            if (this->mouse.position.x > LEFT_PANEL_WIDTH) {
+                                if (selected_section == BACKGROUND_SECTION) {
+                                    this->map.tilemap[i][j] = this->selected_tile;
+                                }
                             }
                         }
                         if (this->mouse.just_left_clicked && this->selected_tile != -1) {
-                            if (selected_section == INTERACTABLES_SECTION) {
-                                // TODO: check how to flip
-                                this->map.interactables.push_back({ world_position, this->selected_tile, +1 });
+                            if (this->mouse.position.x > LEFT_PANEL_WIDTH) {
+                                if (selected_section == INTERACTABLES_SECTION) {
+                                    // TODO: check how to flip
+                                    this->map.interactables.push_back({world_position, this->selected_tile, +1});
+                                }
                             }
                         }
 
@@ -469,7 +475,7 @@ private:
         int window_w = 0;
         int window_h = 0;
         SDL_GetWindowSize(this->sdl_window, &window_w, &window_h);
-        draw_filled_region(this->sdl_renderer, { 0, 0, 200, window_h }, DARK_PURPLE_COLOR);
+        draw_filled_region(this->sdl_renderer, { 0, 0, LEFT_PANEL_WIDTH, window_h }, DARK_PURPLE_COLOR);
 
         // Tiles tab
         draw_filled_region(this->sdl_renderer, { 10, 50, 180, 430 }, PURPLE_COLOR);
