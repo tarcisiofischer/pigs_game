@@ -36,10 +36,10 @@ public:
     static auto constexpr reference_point = Vector2D<int> { 41, 30 };
     static auto constexpr spritesheet_offset = Vector2D<int> { 41, 32 };
 
-    static auto constexpr walk_speed = 0.12;
+    static auto constexpr walk_speed = 0.1;
     static auto constexpr dash_speed = 0.25;
-    static auto constexpr jump_speed = 0.34;
-    static auto constexpr double_jump_speed = 0.24;
+    static auto constexpr jump_speed = 0.3;
+    static auto constexpr double_jump_speed = 0.25;
     static auto constexpr reset_dash_timeout = 200.0;
     static auto constexpr reset_no_dash_timeout = 500.0;
 
