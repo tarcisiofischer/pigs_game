@@ -12,3 +12,4 @@ cmake_install.cmake
 PigsGame
 MapEditor
 compile_commands.json
+cmake-build-*/
