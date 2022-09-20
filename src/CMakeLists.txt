@@ -26,6 +26,9 @@ set(SOURCE_FILES
     characters/PigWithMatches.cpp
     characters/PigWithMatches.hpp
 
+    items/Key.cpp
+    items/Key.hpp
+
     collision/aabb.hpp
     collision/character_collision.cpp
     collision/character_collision.hpp

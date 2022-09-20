@@ -2,6 +2,7 @@
 #include <characters/IGameCharacter.hpp>
 #include <characters/King.hpp>
 #include <characters/Pig.hpp>
+#include <items/Key.hpp>
 #include <characters/builder.hpp>
 
 std::vector<IGameCharacter*> build_game_characters(SDL_Renderer* renderer, GameMap const& map)
@@ -24,6 +25,10 @@ std::vector<IGameCharacter*> build_game_characters(SDL_Renderer* renderer, GameM
         if (info.id == 1) {
             auto pig = new Pig(renderer, info.position.x, info.position.y);
             game_characters.push_back(pig);
+        }
+        if (info.id == 4) {
+            auto key = new Key(renderer, info.position.x, info.position.y);
+            game_characters.push_back(key);
         }
     }
 

@@ -2,6 +2,7 @@
 #include <characters/CannonBall.hpp>
 #include <characters/King.hpp>
 #include <characters/Pig.hpp>
+#include <items/Key.hpp>
 #include <collision/character_collision.hpp>
 
 void pig_king_collision(Pig* pig_ptr, King* king)
@@ -74,6 +75,18 @@ void cannonball_pig_collision(CannonBall* cannon_ptr, Pig* pig_ptr)
     }
 }
 
+void item_king_collision(Key* key_ptr, King* king_ptr)
+{
+    auto& key = *key_ptr;
+    auto& king = *king_ptr;
+
+    auto const& key_collision_region = key.get_collision_region_information().collision_region;
+    auto const& king_collision_region = king.get_collision_region_information().collision_region;
+    if (check_aabb_collision(key_collision_region, king_collision_region)) {
+        key.collect();
+    }
+}
+
 void compute_characters_collisions(std::vector<IGameCharacter*>& game_characters)
 {
     for (int i = 0; i < game_characters.size(); ++i) {
@@ -109,6 +122,12 @@ void compute_characters_collisions(std::vector<IGameCharacter*>& game_characters
             } else if (dynamic_cast<CannonBall*>(game_characters[j]) && dynamic_cast<Pig*>(game_characters[i])) {
                 cannonball_pig_collision(dynamic_cast<CannonBall*>(game_characters[j]),
                     dynamic_cast<Pig*>(game_characters[i]));
+            }
+
+            else if (dynamic_cast<Key*>(game_characters[i]) && dynamic_cast<King*>(game_characters[j])) {
+                item_king_collision(dynamic_cast<Key*>(game_characters[i]), dynamic_cast<King*>(game_characters[j]));
+            } else if (dynamic_cast<Key*>(game_characters[j]) && dynamic_cast<King*>(game_characters[i])) {
+                item_king_collision(dynamic_cast<Key*>(game_characters[j]), dynamic_cast<King*>(game_characters[i]));
             }
         }
     }
