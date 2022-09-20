@@ -2,7 +2,7 @@
 
 [![CMake](https://github.com/tarcisiofischer/pigs_game/actions/workflows/cmake.yml/badge.svg?branch=master)](https://github.com/tarcisiofischer/pigs_game/actions/workflows/cmake.yml)
 
-A small 2d sidescroller game written in C++ with SDL2.
+A small 2D sidescroller game written in C++ with SDL2.
 
 ![Pigs Castle](etc/example.gif)
 
@@ -23,13 +23,17 @@ Make sure you have SDL installed. For example, in Ubuntu systems:
 apt install libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev
 ```
 
-Building with CMake:
+Building and running (with CMake):
 
 ```
-mkdir build/
-cd build/
+# Build
+mkdir build/ && cd build/
 cmake ..
 cmake --build .
+
+# Run
+cd bin/
+./PigsGame
 ```
 
 ## Special thanks
