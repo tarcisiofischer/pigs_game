@@ -4,7 +4,6 @@
 #include <StateTimeout.hpp>
 #include <GameTimeHandler.hpp>
 #include <Vector2D.hpp>
-#include <characters/King.hpp>
 #include <levels/IGameLevel.hpp>
 #include <memory>
 #include <random.hpp>

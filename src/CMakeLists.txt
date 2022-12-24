@@ -19,12 +19,12 @@ set(SOURCE_FILES
     characters/Cannon.cpp
     characters/Cannon.hpp
     characters/CannonBall.hpp
-    characters/King.cpp
-    characters/King.hpp
     characters/Pig.cpp
     characters/Pig.hpp
     characters/PigWithMatches.cpp
     characters/PigWithMatches.hpp
+    characters/Liv.cpp
+    characters/Liv.hpp
 
     items/Key.cpp
     items/Key.hpp

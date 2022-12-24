@@ -1,7 +1,6 @@
 #include <GameHandler.hpp>
 #include <TransitionAnimation.hpp>
 #include <characters/IGameCharacter.hpp>
-#include <characters/King.hpp>
 #include <characters/builder.hpp>
 #include <io.hpp>
 #include <levels/EntryLevel.hpp>
@@ -30,7 +29,7 @@ std::vector<IGameCharacter*>& EntryLevel::get_characters()
 std::function<void()> EntryLevel::get_collision_callback(int callback_collision_id, IGameCharacter* character)
 {
     if (callback_collision_id == 1) {
-        if (dynamic_cast<King*>(character) == nullptr) {
+        if (dynamic_cast<Liv*>(character) == nullptr) {
             return nullptr;
         }
 

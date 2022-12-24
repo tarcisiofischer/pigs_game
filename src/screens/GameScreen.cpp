@@ -187,11 +187,11 @@ void GameScreen::set_active_level(std::unique_ptr<IGameLevel>&& lvl)
     };
 }
 
-King* GameScreen::player()
+Liv* GameScreen::player()
 {
     auto& characters = this->active_lvl->get_characters();
     for (auto& c : characters) {
-        auto* k = dynamic_cast<King*>(c);
+        auto* k = dynamic_cast<Liv*>(c);
         if (k != nullptr) {
             return k;
         }

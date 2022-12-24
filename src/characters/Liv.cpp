@@ -1,6 +1,6 @@
-#include <characters/King.hpp>
+#include <characters/Liv.hpp>
 
-King::King(SDL_Renderer* renderer, double pos_x, double pos_y)
+Liv::Liv(SDL_Renderer* renderer, double pos_x, double pos_y)
     : running_side(0)
     , animations()
     , after_taking_damage_timeout()
@@ -10,12 +10,11 @@ King::King(SDL_Renderer* renderer, double pos_x, double pos_y)
     , position { pos_x, pos_y }
     , velocity { 0.0, 0.0 }
     , renderer(renderer)
-    , spritesheet(load_media("assets/sprites/king96x96.png", renderer))
+    , spritesheet(load_media("assets/sprites/liv23x26.png", renderer))
     , is_jumping(false)
     , is_falling(true)
     , start_jumping(false)
     , is_grounded(false)
-    , is_attacking(false)
     , just_touched_ground(false)
     , is_taking_damage(false)
     , after_taking_damage(false)
@@ -27,81 +26,70 @@ King::King(SDL_Renderer* renderer, double pos_x, double pos_y)
     , jump_count(0)
 {
     auto register_animation = [&](int id, std::vector<std::tuple<int, int>> const& frames, double time) {
-        this->animations.insert(std::make_pair(id, Animation(this->spritesheet, frames, 96, 96, time)));
+        this->animations.insert(std::make_pair(id, Animation(this->spritesheet, frames, FRAME_SIZE_X, FRAME_SIZE_Y, time)));
     };
-    register_animation(King::IDLE_ANIMATION,
+    register_animation(IDLE_ANIMATION,
         {
-            { 1, 3 },
-            { 2, 3 },
-            { 3, 3 },
-            { 4, 3 },
-            { 5, 3 },
-            { 6, 3 },
+            { 0, 0 },
+            { 1, 0 },
+            { 0, 0 },
+            { 2, 0 },
+        },
+        250.);
+    register_animation(RUNNING_ANIMATION,
+        {
+            { 0, 1 },
+            { 1, 1 },
+            { 2, 1 },
+            { 0, 2 },
         },
         100.);
-    register_animation(King::RUNNING_ANIMATION,
+    register_animation(JUMPING_ANIMATION,
         {
-            { 4, 4 },
-            { 5, 4 },
-            { 6, 4 },
-            { 0, 5 },
-            { 1, 5 },
-            { 2, 5 },
-            { 3, 5 },
+            { 1, 2 },
         },
         100.);
-    register_animation(King::JUMPING_ANIMATION,
+    register_animation(FALLING_ANIMATION,
         {
-            { 0, 4 },
+               { 2, 2 },
         },
         100.);
-    register_animation(King::FALLING_ANIMATION,
+    register_animation(JUST_TOUCHED_GROUND_ANIMATION,
         {
-            { 1, 4 },
+               { 2, 2 },
         },
         100.);
-    register_animation(King::ATTACKING_ANIMATION,
+    register_animation(DASHING_ANIMATION,
         {
-            { 3, 5 },
-            { 4, 5 },
-            { 5, 5 },
+            { 0, 3 },
         },
         100.);
-    register_animation(King::JUST_TOUCHED_GROUND_ANIMATION,
+    register_animation(TAKING_DAMAGE_ANIMATION,
         {
-            { 2, 4 },
+                { 1, 3 },
+                { 2, 3 },
+                { 1, 3 },
+                { 2, 3 },
+                { 1, 3 },
+        },
+        60.);
+    register_animation(DYING_ANIMATION,
+        {
+                { 2, 3 },
+                { 0, 4 },
+                { 1, 4 },
+                { 2, 4 },
+                { 0, 5 },
+                { 1, 5 },
+                { 2, 5 },
+        },
+        60.);
+    register_animation(DEAD_ANIMATION,
+        {
+               { 2, 5 },
         },
         150.);
-    register_animation(King::TAKING_DAMAGE_ANIMATION,
-        {
-            { 1, 0 },
-            { 2, 0 },
-            { 4, 1 },
-            { 2, 0 },
-            { 4, 1 },
-        },
-        100.);
-    register_animation(King::DYING_ANIMATION,
-        {
-            { 1, 0 },
-            { 2, 0 },
-            { 3, 0 },
-            { 4, 0 },
-            { 5, 0 },
-        },
-        100.);
-    register_animation(King::DEAD_ANIMATION,
-        {
-            { 5, 0 },
-        },
-        100.);
-    register_animation(King::DASHING_ANIMATION,
-       {
-           { 4, 2 },
-       },
-       100.);
 
-    this->animations.at(ATTACKING_ANIMATION).set_on_finish_animation_callback([this]() { this->is_attacking = false; });
     this->animations.at(JUST_TOUCHED_GROUND_ANIMATION).set_on_finish_animation_callback([this]() {
         this->just_touched_ground = false;
     });
@@ -120,41 +108,40 @@ King::King(SDL_Renderer* renderer, double pos_x, double pos_y)
         this->after_taking_damage = false;
         this->is_dying = false;
         this->is_dead = true;
-        this->is_attacking = false;
         if (this->on_dead_callback) {
             (*this->on_dead_callback)();
         }
     });
 }
 
-void King::set_position(double x, double y)
+void Liv::set_position(double x, double y)
 {
     this->position.x = x;
     this->position.y = y;
 }
 
-Vector2D<double> King::get_position() const
+Vector2D<double> Liv::get_position() const
 {
     return this->position;
 }
 
-Vector2D<double> King::get_velocity() const
+Vector2D<double> Liv::get_velocity() const
 {
     return this->velocity;
 }
 
-void King::set_velocity(double x, double y)
+void Liv::set_velocity(double x, double y)
 {
     this->velocity.x = x;
     this->velocity.y = y;
 }
 
-CollisionRegionInformation King::get_collision_region_information() const
+CollisionRegionInformation Liv::get_collision_region_information() const
 {
     return CollisionRegionInformation(this->position, this->old_position, this->collision_size);
 }
 
-void King::handle_collision(const CollisionType& type, const CollisionSide& side)
+void Liv::handle_collision(const CollisionType& type, const CollisionSide& side)
 {
     if (type == CollisionType::TILEMAP_COLLISION && side == CollisionSide::TOP_COLLISION) {
         this->set_velocity(0.0, +0.01); // Force response
@@ -171,7 +158,7 @@ void King::handle_collision(const CollisionType& type, const CollisionSide& side
     }
 }
 
-void King::on_after_collision()
+void Liv::on_after_collision()
 {
     this->is_falling = (!this->is_grounded && this->velocity.y < 0.0);
     this->is_jumping = (!this->is_grounded && this->velocity.y > 0.0);
@@ -180,7 +167,7 @@ void King::on_after_collision()
     }
 }
 
-void King::handle_controller(GameController const& controller)
+void Liv::handle_controller(GameController const& controller)
 {
     if (this->is_taking_damage || this->is_dying || this->is_dead) {
         return;
@@ -206,12 +193,6 @@ void King::handle_controller(GameController const& controller)
         }
     }
 
-    if (controller.just_pressed(ControllerAction::AttackKey)) {
-        if (!this->is_attacking) {
-            this->is_attacking = true;
-        }
-    }
-
     if (controller.just_pressed(ControllerAction::DashKey)) {
         if (!this->start_dashing && this->dashing_timeout <= 0.0 && this->no_dash_timeout <= 0.0) {
             this->start_dashing = true;
@@ -222,47 +203,49 @@ void King::handle_controller(GameController const& controller)
     }
 }
 
-void King::register_on_dead_callback(const std::function<void()>& f)
+void Liv::register_on_dead_callback(const std::function<void()>& f)
 {
     this->on_dead_callback = f;
 }
 
-void King::update(double elapsedTime)
+void Liv::update(double elapsedTime)
 {
+    using SELF = Liv;
+
     // Update velocity x
     if (!this->is_taking_damage && !this->is_dying && !this->is_dead) {
-        this->velocity.x = this->running_side * King::walk_speed;
+        this->velocity.x = this->running_side * SELF::walk_speed;
 
         // Update velocity y
         if (this->start_jumping) {
             this->start_jumping = false;
             this->is_grounded = false;
             if (this->jump_count == 0) {
-                this->velocity.y = King::jump_speed;
+                this->velocity.y = SELF::jump_speed;
             } else if (this->jump_count == 1) {
-                this->velocity.y = King::double_jump_speed;
+                this->velocity.y = SELF::double_jump_speed;
             }
 
             // Cancel dashing
             if (this->dashing_timeout > 0.0) {
                 this->start_dashing = false;
                 this->dashing_timeout = 0.0;
-                this->no_dash_timeout = King::reset_no_dash_timeout;
+                this->no_dash_timeout = SELF::reset_no_dash_timeout;
             }
 
             this->jump_count += 1;
         }
 
         if (this->start_dashing) {
-            this->dashing_timeout = King::reset_dash_timeout;
+            this->dashing_timeout = SELF::reset_dash_timeout;
             this->start_dashing = false;
         }
         if (this->dashing_timeout > 0.0) {
-            this->velocity.x = this->face * King::dash_speed;
+            this->velocity.x = this->face * Liv::dash_speed;
             this->velocity.y = 0.0;
             this->dashing_timeout -= elapsedTime;
             if (this->dashing_timeout <= 0.0) {
-                this->no_dash_timeout = King::reset_no_dash_timeout;
+                this->no_dash_timeout = Liv::reset_no_dash_timeout;
             }
         }
         if (this->no_dash_timeout > 0.0) {
@@ -286,7 +269,7 @@ void King::update(double elapsedTime)
     this->after_taking_damage_timeout.update(elapsedTime);
 }
 
-void King::start_taking_damage()
+void Liv::start_taking_damage()
 {
     this->velocity.x = -this->face * 0.05;
     this->velocity.y = 0.1;
@@ -299,7 +282,7 @@ void King::start_taking_damage()
     }
 }
 
-void King::run_animation(double elapsedTime)
+void Liv::run_animation(double elapsedTime)
 {
     auto current_animation = ([this]() {
         if (this->is_dead) {
@@ -316,9 +299,6 @@ void King::run_animation(double elapsedTime)
         }
         if (this->just_touched_ground) {
             return JUST_TOUCHED_GROUND_ANIMATION;
-        }
-        if (this->is_attacking) {
-            return ATTACKING_ANIMATION;
         }
         if (this->is_falling) {
             return FALLING_ANIMATION;
@@ -338,9 +318,7 @@ void King::run_animation(double elapsedTime)
     }
 }
 
-Region2D<double> King::attack_region() const
+Region2D<double> Liv::attack_region() const
 {
-    auto const& collision_region = this->get_collision_region_information().collision_region;
-    return { collision_region.x + this->face * attack_region_offset_x, collision_region.y + attack_region_offset_y,
-        collision_region.w + attack_region_w, collision_region.h + attack_region_h };
+    return { 0, 0, 0, 0 };
 }

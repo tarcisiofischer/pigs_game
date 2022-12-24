@@ -4,17 +4,17 @@
 #include <screens/IScreen.hpp>
 #include <levels/IGameLevel.hpp>
 #include <memory>
-#include <characters/King.hpp>
+#include <characters/Liv.hpp>
 
 class GameHandler;
 
 class GameScreen : public IScreen {
 public:
-    GameScreen(GameHandler& game_handler);
+    explicit GameScreen(GameHandler& game_handler);
     void handle_controller(GameController const& controller) override;
     void update(double elapsed_time) override;
     void render(SDL_Renderer* renderer, double elapsed_time) override;
-    King* player();
+    Liv* player();
     void set_active_level(std::unique_ptr<IGameLevel>&& lvl);
 
 private:
