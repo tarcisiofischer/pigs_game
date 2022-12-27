@@ -95,6 +95,13 @@ void GameScreen::render(SDL_Renderer* renderer, double elapsed_time)
         }
     }
 
+    for (auto& misc_animation : misc_animations) {
+//        misc_animation->run(renderer, elapsed_time);
+
+//        SDL_Renderer* renderer, double elapsedTime, int face, Vector2D<int> const& world_position,
+//                Vector2D<int> const& sprite_offset, Vector2D<int> const& camera_offset
+    }
+
     for (auto& game_character : game_characters) {
         game_character->run_animation(elapsed_time);
     }

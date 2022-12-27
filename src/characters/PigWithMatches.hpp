@@ -19,6 +19,7 @@ public:
 
     static auto constexpr DEFAULT_THINK_TIMEOUT = 500.0;
 
+    static auto constexpr SPRITESHEET_OFFSET = Vector2D<int> { 39, 32 };
     static auto constexpr collision_size = Vector2D<int> { 18, 18 };
 
     PigWithMatches(SDL_Renderer* renderer, double pos_x, double pos_y, int face, Cannon& cannon);

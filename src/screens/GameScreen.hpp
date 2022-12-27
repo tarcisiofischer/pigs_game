@@ -3,8 +3,9 @@
 
 #include <screens/IScreen.hpp>
 #include <levels/IGameLevel.hpp>
-#include <memory>
+#include <characters/IGameCharacter.hpp>
 #include <characters/Liv.hpp>
+#include <memory>
 
 class GameHandler;
 
@@ -26,6 +27,7 @@ private:
     std::unique_ptr<IGameLevel> active_lvl;
     bool enable_debug;
     std::vector<std::string> debug_messages;
+    std::vector<Animation*> misc_animations;
 };
 
 #endif //PIGSGAME_GAMESCREEN_HPP

@@ -1,4 +1,5 @@
 #include <characters/Liv.hpp>
+#include <iostream>
 
 Liv::Liv(SDL_Renderer* renderer, double pos_x, double pos_y)
     : running_side(0)
@@ -11,6 +12,7 @@ Liv::Liv(SDL_Renderer* renderer, double pos_x, double pos_y)
     , velocity { 0.0, 0.0 }
     , renderer(renderer)
     , spritesheet(load_media("assets/sprites/liv23x26.png", renderer))
+    , jump_spritesheet(load_media("assets/sprites/jump-smoke.png", renderer))
     , is_jumping(false)
     , is_falling(true)
     , start_jumping(false)
@@ -26,7 +28,7 @@ Liv::Liv(SDL_Renderer* renderer, double pos_x, double pos_y)
     , jump_count(0)
 {
     auto register_animation = [&](int id, std::vector<std::tuple<int, int>> const& frames, double time) {
-        this->animations.insert(std::make_pair(id, Animation(this->spritesheet, frames, FRAME_SIZE_X, FRAME_SIZE_Y, time)));
+        this->animations.insert(std::make_pair(id, Animation(this->spritesheet, frames, SPRITESHEET_OFFSET, FRAME_SIZE_X, FRAME_SIZE_Y, time)));
     };
     register_animation(IDLE_ANIMATION,
         {
@@ -189,6 +191,9 @@ void Liv::handle_controller(GameController const& controller)
             (this->jump_count < 2 && this->is_jumping) ||
             (this->jump_count < 2 && this->is_falling)
         ) {
+            if (this->is_grounded)  {
+                create_jump_animation();
+            }
             this->start_jumping = true;
         }
     }
@@ -312,13 +317,44 @@ void Liv::run_animation(double elapsedTime)
         return IDLE_ANIMATION;
     })();
     this->animations.at(current_animation)
-        .run(this->renderer, elapsedTime, this->face, this->position.as_int(), this->spritesheet_offset, camera_offset);
+        .run(this->renderer, elapsedTime, this->face, this->position.as_int(), camera_offset);
     for (auto& on_after_run_animation : this->on_after_run_animation_callbacks) {
         on_after_run_animation(this->renderer, this, elapsedTime);
+    }
+
+    for (auto& [jump_pos, jumpAnimation] : this->jump_animations) {
+        jumpAnimation->run(this->renderer, elapsedTime, +1, jump_pos.as_int(), camera_offset);
     }
 }
 
 Region2D<double> Liv::attack_region() const
 {
     return { 0, 0, 0, 0 };
+}
+
+void Liv::create_jump_animation()
+{
+    this->jump_animations.emplace_back(
+            Vector2D<double>{this->position.x - 5, this->position.y},
+            std::make_unique<Animation>(
+                    this->jump_spritesheet,
+                    std::vector<std::tuple<int, int>>{
+                            {0, 0},
+                            {0, 1},
+                            {0, 2},
+                            {0, 3},
+                            {0, 4},
+                            {0, 5},
+                    },
+                    Vector2D<int>{0, 0},
+                    21,
+                    4,
+                    50
+            )
+    );
+    auto const& [_, animation] = this->jump_animations.back();
+    auto animation_pos = this->jump_animations.size() - 1;
+    animation->set_on_finish_animation_callback([this, animation_pos](){
+        this->jump_animations.erase(this->jump_animations.begin() + static_cast<int>(animation_pos));
+    });
 }

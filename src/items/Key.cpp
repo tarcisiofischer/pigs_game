@@ -9,7 +9,7 @@ Key::Key(SDL_Renderer* renderer, double pos_x, double pos_y)
         , is_collected(false)
 {
     auto register_animation = [&](int id, std::vector<std::tuple<int, int>> const& frames, double time) {
-        this->animations.insert(std::make_pair(id, Animation(this->spritesheet, frames, 16, 16, time)));
+        this->animations.insert(std::make_pair(id, Animation(this->spritesheet, frames, SPRITESHEET_OFFSET, 16, 16, time)));
     };
 
     register_animation(Key::IDLE_ANIMATION,
@@ -35,8 +35,7 @@ void Key::run_animation(double elapsed_time)
     })();
 
     this->animations.at(current_animation)
-            .run(this->renderer, elapsed_time, 1, Vector2D<int> { int(this->position.x), int(this->position.y) },
-                 {0, 0}, camera_offset);
+            .run(this->renderer, elapsed_time, 1, Vector2D<int> { int(this->position.x), int(this->position.y) }, camera_offset);
 }
 
 void Key::set_position(double x, double y)

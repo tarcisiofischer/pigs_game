@@ -23,7 +23,7 @@ public:
     static auto constexpr FEAR_ANIMATION = 7;
 
     static auto constexpr collision_size = Vector2D<int> { 18, 18 };
-    static auto constexpr spritesheet_offset = Vector2D<int> { 31, 33 };
+    static auto constexpr SPRITESHEET_OFFSET = Vector2D<int> { 31, 33 };
 
     Pig(SDL_Renderer* renderer, double pos_x, double pos_y);
     Pig(Pig const& other);

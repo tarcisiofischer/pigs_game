@@ -22,7 +22,7 @@ Pig::Pig(SDL_Renderer* renderer, double pos_x, double pos_y)
     , talk_color { 0, 0, 0 }
 {
     auto register_animation = [&](int id, std::vector<std::tuple<int, int>> const& frames, double time) {
-        this->animations.insert(std::make_pair(id, Animation(this->spritesheet, frames, 80, 80, time)));
+        this->animations.insert(std::make_pair(id, Animation(this->spritesheet, frames, SPRITESHEET_OFFSET, 80, 80, time)));
     };
 
     register_animation(Pig::IDLE_ANIMATION,
@@ -229,7 +229,7 @@ void Pig::run_animation(double elapsed_time)
     })();
     this->animations.at(current_animation)
         .run(this->renderer, elapsed_time, -this->face, Vector2D<int> { int(this->position.x), int(this->position.y) },
-            this->spritesheet_offset, camera_offset);
+            camera_offset);
     if (this->is_talking) {
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         auto player_world_position = this->get_position().as_int();

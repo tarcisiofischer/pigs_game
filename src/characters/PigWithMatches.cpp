@@ -13,7 +13,7 @@ PigWithMatches::PigWithMatches(SDL_Renderer* renderer, double pos_x, double pos_
     , cannon(cannon)
 {
     auto register_animation = [&](int id, std::vector<std::tuple<int, int>> const& frames, double time) {
-        this->animations.insert(std::make_pair(id, Animation(this->spritesheet, frames, 96, 96, time)));
+        this->animations.insert(std::make_pair(id, Animation(this->spritesheet, frames, SPRITESHEET_OFFSET, 96, 96, time)));
     };
 
     register_animation(PigWithMatches::IDLE_ANIMATION,
@@ -102,7 +102,7 @@ void PigWithMatches::run_animation(double elapsedTime)
         return IDLE_ANIMATION;
     })();
     this->animations.at(current_animation)
-        .run(this->renderer, elapsedTime, -this->face, this->position.as_int(), Vector2D<int> { 39, 32 }, camera_offset);
+        .run(this->renderer, elapsedTime, -this->face, this->position.as_int(), camera_offset);
 }
 
 void PigWithMatches::think(double elapsedTime)

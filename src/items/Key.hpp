@@ -12,6 +12,7 @@ class Key : public IGameCharacter {
 public:
     static auto constexpr collision_size = Vector2D<int> { 18, 18 };
     static auto constexpr IDLE_ANIMATION = 0;
+    static auto constexpr SPRITESHEET_OFFSET = Vector2D<int> { 0, 0 };
 
     Key(SDL_Renderer* renderer, double pos_x, double pos_y);
 

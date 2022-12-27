@@ -1,15 +1,16 @@
 #ifndef __LIV_HPP
 #define __LIV_HPP
 
+#include <characters/IGameCharacter.hpp>
+#include <GameController.hpp>
 #include <Animation.hpp>
 #include <StateTimeout.hpp>
 #include <Vector2D.hpp>
-#include <characters/IGameCharacter.hpp>
+#include <sdl_wrappers.hpp>
+#include <random.hpp>
 #include <functional>
 #include <optional>
-#include <random.hpp>
-#include <sdl_wrappers.hpp>
-#include <GameController.hpp>
+#include <memory>
 
 extern Vector2D<int> camera_offset;
 
@@ -28,7 +29,7 @@ public:
     static auto constexpr FRAME_SIZE_X = 23;
     static auto constexpr FRAME_SIZE_Y = 26;
     static auto constexpr collision_size = Vector2D<int> { 12, 20 };
-    static auto constexpr spritesheet_offset = Vector2D<int> { 6, 2 };
+    static auto constexpr SPRITESHEET_OFFSET = Vector2D<int> { 6, 2 };
     static auto constexpr walk_speed = 0.1;
     static auto constexpr dash_speed = 0.25;
     static auto constexpr jump_speed = 0.3;
@@ -52,9 +53,13 @@ public:
     void run_animation(double elapsedTime) override;
     [[nodiscard]] Region2D<double> attack_region() const;
 
+private:
+    void create_jump_animation();
+
 public:
     int running_side;
     std::map<int, Animation> animations;
+    std::vector<std::tuple<Vector2D<double>, std::unique_ptr<Animation>>> jump_animations;
     std::vector<std::function<void(SDL_Renderer*, IGameCharacter*, double)>> on_after_run_animation_callbacks;
     StateTimeout after_taking_damage_timeout;
     int face;
@@ -64,6 +69,7 @@ public:
     Vector2D<double> velocity;
     SDL_Renderer* renderer;
     SDL_Texture* spritesheet;
+    SDL_Texture* jump_spritesheet;
     bool is_jumping;
     bool is_falling;
     bool start_jumping;

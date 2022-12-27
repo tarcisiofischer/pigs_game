@@ -17,7 +17,7 @@ public:
     static auto constexpr collision_offset_y = 43.;
     static auto constexpr collision_size = Vector2D<int> { 24, 21 };
 
-    static auto constexpr spritesheet_offset = Vector2D<int> { 37, 32 };
+    static auto constexpr SPRITESHEET_OFFSET = Vector2D<int> { 37, 32 };
 
     Cannon(SDL_Renderer* renderer, double pos_x, double pos_y, int face);
     void set_on_before_fire(std::function<void()> const& f);

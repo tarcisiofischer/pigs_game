@@ -23,7 +23,7 @@ public:
 
     CannonBall(SDL_Renderer* renderer, double pos_x, double pos_y)
         : animations()
-        , boom_animation(nullptr, {}, 0, 0, 100.)
+        , boom_animation(nullptr, {}, {0, 0}, 0, 0, 100.)
         , position { pos_x, pos_y }
         , old_position { pos_x, pos_y }
         , velocity { 0.0,
@@ -34,7 +34,7 @@ public:
         , boom_spritesheet(load_media("assets/sprites/boom80x80.png", renderer))
     {
         auto register_animation = [&](int id, std::vector<std::tuple<int, int>> const& frames, double time) {
-            this->animations.insert(std::make_pair(id, Animation(this->spritesheet, frames, 44, 28, time)));
+            this->animations.insert(std::make_pair(id, Animation(this->spritesheet, frames, Vector2D<int> { 20, 0 }, 44, 28, time)));
         };
         register_animation(CannonBall::IDLE_ANIMATION,
             {
@@ -51,6 +51,7 @@ public:
                 { 4, 0 },
                 { 5, 0 },
             },
+            Vector2D<int> { 30, 27 },
             80, 80, 100.);
 
         this->boom_animation.set_on_finish_animation_callback([this]() { this->state = CannonBallState::finished; });
@@ -66,9 +67,9 @@ public:
     {
         if (this->state == CannonBallState::active) {
             this->animations.at(IDLE_ANIMATION)
-                .run(this->renderer, elapsedTime, +1, this->position.as_int(), Vector2D<int> { 20, 0 }, camera_offset);
+                .run(this->renderer, elapsedTime, +1, this->position.as_int(), camera_offset);
         } else if (this->state == CannonBallState::exploding) {
-            this->boom_animation.run(this->renderer, elapsedTime, +1, this->position.as_int(), Vector2D<int> { 30, 27 },
+            this->boom_animation.run(this->renderer, elapsedTime, +1, this->position.as_int(),
                 camera_offset);
         }
     }
