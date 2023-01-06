@@ -159,6 +159,9 @@ CollisionRegionInformation Pig::get_collision_region_information() const
 
 void Pig::handle_collision(CollisionType const& type, CollisionSide const& side)
 {
+    if (type == CollisionType::DANGEROUS_COLLISION && side == CollisionSide::BOTTOM_COLLISION) {
+        this->start_taking_damage();
+    }
 }
 
 void Pig::on_after_collision()
