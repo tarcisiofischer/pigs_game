@@ -21,7 +21,7 @@ GameMap& EntryLevel::get_map()
     return this->map;
 }
 
-std::vector<IGameCharacter*>& EntryLevel::get_characters()
+std::vector<std::unique_ptr<IGameCharacter>>& EntryLevel::get_characters()
 {
     return this->characters;
 }

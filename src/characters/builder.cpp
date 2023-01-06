@@ -5,30 +5,27 @@
 #include <items/Key.hpp>
 #include <characters/builder.hpp>
 
-std::vector<IGameCharacter*> build_game_characters(SDL_Renderer* renderer, GameMap const& map)
+std::vector<std::unique_ptr<IGameCharacter>> build_game_characters(SDL_Renderer* renderer, GameMap const& map)
 {
-    // TODO: Avoid raw pointers
-    auto game_characters = std::vector<IGameCharacter*>();
-    auto player = ([&map, &renderer]() -> IGameCharacter* {
+    auto game_characters = std::vector<std::unique_ptr<IGameCharacter>>();
+    auto player = ([&map, &renderer]() -> std::unique_ptr<IGameCharacter> {
         for (auto const& info : map.interactables) {
             if (info.id == 0) {
-                return new Liv(renderer, info.position.x, info.position.y);
+                return std::make_unique<Liv>(renderer, info.position.x, info.position.y);
             }
         }
         return nullptr;
     })();
     if (player) {
-        game_characters.push_back(player);
+        game_characters.push_back(std::move(player));
     }
 
     for (auto const& info : map.interactables) {
         if (info.id == 1) {
-            auto pig = new Pig(renderer, info.position.x, info.position.y);
-            game_characters.push_back(pig);
+            game_characters.push_back(std::make_unique<Pig>(renderer, info.position.x, info.position.y));
         }
         if (info.id == 4) {
-            auto key = new Key(renderer, info.position.x, info.position.y);
-            game_characters.push_back(key);
+            game_characters.push_back(std::make_unique<Key>(renderer, info.position.x, info.position.y));
         }
     }
 

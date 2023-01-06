@@ -18,7 +18,7 @@ GameMap& PreludeLevel::get_map()
     return this->map;
 }
 
-std::vector<IGameCharacter*>& PreludeLevel::get_characters()
+std::vector<std::unique_ptr<IGameCharacter>>& PreludeLevel::get_characters()
 {
     return this->characters;
 }
@@ -28,11 +28,11 @@ std::function<void()> PreludeLevel::get_collision_callback(int callback_collisio
     return nullptr;
 }
 
-void prepare_script(std::vector<IGameCharacter*> game_characters, TransitionAnimation& transition_animation)
+void prepare_script(std::vector<std::unique_ptr<IGameCharacter>>& game_characters, TransitionAnimation& transition_animation)
 {
-    auto pig1 = dynamic_cast<Pig*>(game_characters[0]);
-    auto pig2 = dynamic_cast<Pig*>(game_characters[1]);
-    auto pig3 = dynamic_cast<Pig*>(game_characters[2]);
+    auto pig1 = dynamic_cast<Pig*>(game_characters[0].get());
+    auto pig2 = dynamic_cast<Pig*>(game_characters[1].get());
+    auto pig3 = dynamic_cast<Pig*>(game_characters[2].get());
 
     auto pig1_color = RGBColor { 0, 100, 0 };
     auto pig2_color = RGBColor { 250, 50, 50 };

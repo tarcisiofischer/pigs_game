@@ -20,7 +20,7 @@ GameMap& Level2::get_map()
     return this->map;
 }
 
-std::vector<IGameCharacter*>& Level2::get_characters()
+std::vector<std::unique_ptr<IGameCharacter>>& Level2::get_characters()
 {
     return this->characters;
 }

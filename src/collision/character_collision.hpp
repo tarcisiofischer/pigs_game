@@ -3,7 +3,8 @@
 
 #include <collision/aabb.hpp>
 #include <vector>
+#include <memory>
 
-void compute_characters_collisions(std::vector<IGameCharacter*>& game_characters);
+void compute_characters_collisions(std::vector<std::unique_ptr<IGameCharacter>>& game_characters);
 
 #endif

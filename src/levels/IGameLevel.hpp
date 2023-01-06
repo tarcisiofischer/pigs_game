@@ -5,11 +5,12 @@
 #include <characters/IGameCharacter.hpp>
 #include <functional>
 #include <vector>
+#include <memory>
 
 class IGameLevel {
 public:
     virtual GameMap& get_map() = 0;
-    virtual std::vector<IGameCharacter*>& get_characters() = 0;
+    virtual std::vector<std::unique_ptr<IGameCharacter>>& get_characters() = 0;
     virtual std::function<void()> get_collision_callback(int callback_collision_id, IGameCharacter* character) = 0;
 };
 

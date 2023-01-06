@@ -193,7 +193,7 @@ Liv* GameScreen::player()
 {
     auto& characters = this->active_lvl->get_characters();
     for (auto& c : characters) {
-        auto* k = dynamic_cast<Liv*>(c);
+        auto* k = dynamic_cast<Liv*>(c.get());
         if (k != nullptr) {
             return k;
         }
@@ -204,7 +204,7 @@ Liv* GameScreen::player()
 void GameScreen::update_characters(double elapsed_time)
 {
     auto& game_characters = this->active_lvl->get_characters();
-    for (auto* c : game_characters) {
+    for (auto& c : game_characters) {
         c->update(elapsed_time);
     }
 }
@@ -214,8 +214,8 @@ void GameScreen::compute_collisions()
     auto& game_characters = this->active_lvl->get_characters();
     auto& map = this->active_lvl->get_map();
 
-    for (auto* c : game_characters) {
-        compute_tilemap_collisions(map, c, *this->active_lvl);
+    for (auto& c : game_characters) {
+        compute_tilemap_collisions(map, c.get(), *this->active_lvl);
     }
     compute_characters_collisions(game_characters);
 }

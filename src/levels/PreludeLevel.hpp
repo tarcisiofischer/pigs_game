@@ -38,19 +38,19 @@ static std::map<std::string, std::string> tr = {
     { "AND START WORKING??", "E COMECAR A TRABALHAR??" }
 };
 
-void prepare_script(std::vector<IGameCharacter*> game_characters, TransitionAnimation& transition_animation);
+void prepare_script(std::vector<std::unique_ptr<IGameCharacter>>& game_characters, TransitionAnimation& transition_animation);
 
 class PreludeLevel : public IGameLevel {
 public:
     explicit PreludeLevel(GameHandler& game_handler);
 
     GameMap& get_map() override;
-    std::vector<IGameCharacter*>& get_characters() override;
+    std::vector<std::unique_ptr<IGameCharacter>>& get_characters() override;
     std::function<void()> get_collision_callback(int callback_collision_id, IGameCharacter* character) override;
 
 private:
     GameMap map;
-    std::vector<IGameCharacter*> characters;
+    std::vector<std::unique_ptr<IGameCharacter>> characters;
 };
 
 #endif

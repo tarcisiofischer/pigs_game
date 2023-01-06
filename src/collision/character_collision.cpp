@@ -69,54 +69,51 @@ void item_liv_collision(Key* key_ptr, Liv* liv_ptr)
     }
 }
 
-void compute_characters_collisions(std::vector<IGameCharacter*>& game_characters)
+void compute_characters_collisions(std::vector<std::unique_ptr<IGameCharacter>>& game_characters)
 {
     for (int i = 0; i < game_characters.size(); ++i) {
         for (int j = i + 1; j < game_characters.size(); ++j) {
+            auto* char_i = game_characters[i].get();
+            auto* char_j = game_characters[j].get();
+
             if (false) {
             }
 
-            else if (dynamic_cast<Pig*>(game_characters[i]) && dynamic_cast<Liv*>(game_characters[j])) {
-                pig_liv_collision(dynamic_cast<Pig*>(game_characters[i]), dynamic_cast<Liv*>(game_characters[j]));
-            } else if (dynamic_cast<Pig*>(game_characters[j]) && dynamic_cast<Liv*>(game_characters[i])) {
-                pig_liv_collision(dynamic_cast<Pig*>(game_characters[j]), dynamic_cast<Liv*>(game_characters[i]));
+            else if (dynamic_cast<Pig*>(char_i) && dynamic_cast<Liv*>(char_j)) {
+                pig_liv_collision(dynamic_cast<Pig*>(char_i), dynamic_cast<Liv*>(char_j));
+            } else if (dynamic_cast<Pig*>(char_j) && dynamic_cast<Liv*>(char_i)) {
+                pig_liv_collision(dynamic_cast<Pig*>(char_j), dynamic_cast<Liv*>(char_i));
             }
 
-            else if (dynamic_cast<Cannon*>(game_characters[i]) && dynamic_cast<Liv*>(game_characters[j])) {
-                cannon_liv_collision(dynamic_cast<Cannon*>(game_characters[i]),
-                    dynamic_cast<Liv*>(game_characters[j]));
-            } else if (dynamic_cast<Cannon*>(game_characters[j]) && dynamic_cast<Liv*>(game_characters[i])) {
-                cannon_liv_collision(dynamic_cast<Cannon*>(game_characters[j]),
-                    dynamic_cast<Liv*>(game_characters[i]));
+            else if (dynamic_cast<Cannon*>(char_i) && dynamic_cast<Liv*>(char_j)) {
+                cannon_liv_collision(dynamic_cast<Cannon*>(char_i), dynamic_cast<Liv*>(char_j));
+            } else if (dynamic_cast<Cannon*>(char_j) && dynamic_cast<Liv*>(char_i)) {
+                cannon_liv_collision(dynamic_cast<Cannon*>(char_j), dynamic_cast<Liv*>(char_i));
             }
 
-            else if (dynamic_cast<CannonBall*>(game_characters[i]) && dynamic_cast<Liv*>(game_characters[j])) {
-                cannonball_liv_collision(dynamic_cast<CannonBall*>(game_characters[i]),
-                    dynamic_cast<Liv*>(game_characters[j]));
-            } else if (dynamic_cast<CannonBall*>(game_characters[j]) && dynamic_cast<Liv*>(game_characters[i])) {
-                cannonball_liv_collision(dynamic_cast<CannonBall*>(game_characters[j]),
-                    dynamic_cast<Liv*>(game_characters[i]));
+            else if (dynamic_cast<CannonBall*>(char_i) && dynamic_cast<Liv*>(char_j)) {
+                cannonball_liv_collision(dynamic_cast<CannonBall*>(char_i), dynamic_cast<Liv*>(char_j));
+            } else if (dynamic_cast<CannonBall*>(char_j) && dynamic_cast<Liv*>(char_i)) {
+                cannonball_liv_collision(dynamic_cast<CannonBall*>(char_j), dynamic_cast<Liv*>(char_i));
             }
 
-            else if (dynamic_cast<CannonBall*>(game_characters[i]) && dynamic_cast<Pig*>(game_characters[j])) {
-                cannonball_pig_collision(dynamic_cast<CannonBall*>(game_characters[i]),
-                    dynamic_cast<Pig*>(game_characters[j]));
-            } else if (dynamic_cast<CannonBall*>(game_characters[j]) && dynamic_cast<Pig*>(game_characters[i])) {
-                cannonball_pig_collision(dynamic_cast<CannonBall*>(game_characters[j]),
-                    dynamic_cast<Pig*>(game_characters[i]));
+            else if (dynamic_cast<CannonBall*>(char_i) && dynamic_cast<Pig*>(char_j)) {
+                cannonball_pig_collision(dynamic_cast<CannonBall*>(char_i), dynamic_cast<Pig*>(char_j));
+            } else if (dynamic_cast<CannonBall*>(char_j) && dynamic_cast<Pig*>(char_i)) {
+                cannonball_pig_collision(dynamic_cast<CannonBall*>(char_j), dynamic_cast<Pig*>(char_i));
             }
 
-            else if (dynamic_cast<Key*>(game_characters[i]) && dynamic_cast<Liv*>(game_characters[j])) {
-                item_liv_collision(dynamic_cast<Key*>(game_characters[i]), dynamic_cast<Liv*>(game_characters[j]));
-            } else if (dynamic_cast<Key*>(game_characters[j]) && dynamic_cast<Liv*>(game_characters[i])) {
-                item_liv_collision(dynamic_cast<Key*>(game_characters[j]), dynamic_cast<Liv*>(game_characters[i]));
+            else if (dynamic_cast<Key*>(char_i) && dynamic_cast<Liv*>(char_j)) {
+                item_liv_collision(dynamic_cast<Key*>(char_i), dynamic_cast<Liv*>(char_j));
+            } else if (dynamic_cast<Key*>(char_j) && dynamic_cast<Liv*>(char_i)) {
+                item_liv_collision(dynamic_cast<Key*>(char_j), dynamic_cast<Liv*>(char_i));
             }
         }
     }
 
     game_characters.erase(std::remove_if(game_characters.begin(), game_characters.end(),
-                              [](IGameCharacter* c) {
-                                  auto* pig = dynamic_cast<Pig*>(c);
+                              [](std::unique_ptr<IGameCharacter>& c) {
+                                  auto* pig = dynamic_cast<Pig*>(c.get());
                                   if (pig != nullptr) {
                                       return pig->is_dead;
                                   }
