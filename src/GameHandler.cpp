@@ -98,7 +98,9 @@ void GameHandler::render()
     SDL_SetRenderDrawColor(this->renderer, 0, 0, 0, 255);
     SDL_RenderClear(this->renderer);
     this->screen->render(this->renderer, elapsed_time);
-    this->transition_animation.run(this->renderer, elapsed_time);
+    if (this->transition_animation.current_state() != TransitionAnimationState::finished) {
+        this->transition_animation.run(this->renderer, elapsed_time);
+    }
     SDL_RenderPresent(this->renderer);
 }
 
