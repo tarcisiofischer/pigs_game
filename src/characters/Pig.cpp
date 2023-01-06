@@ -198,7 +198,7 @@ void Pig::start_taking_damage()
     sound_handler.play("hit");
 }
 
-void Pig::run_animation(double elapsed_time)
+void Pig::run_animation(double elapsed_time, Vector2D<int> const& camera_offset)
 {
     auto current_animation = ([this]() {
         if (this->is_dying) {

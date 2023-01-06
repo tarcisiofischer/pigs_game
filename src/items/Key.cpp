@@ -1,7 +1,5 @@
 #include <items/Key.hpp>
 
-extern Vector2D<int> camera_offset;
-
 Key::Key(SDL_Renderer* renderer, double pos_x, double pos_y)
         : position { pos_x, pos_y }
         , renderer(renderer)
@@ -24,7 +22,7 @@ void Key::update(double elapsedTime)
     // Does nothing
 }
 
-void Key::run_animation(double elapsed_time)
+void Key::run_animation(double elapsed_time, Vector2D<int> const& camera_offset)
 {
     if (this->is_collected) {
         return;

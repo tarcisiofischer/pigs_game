@@ -27,7 +27,7 @@ private:
     std::unique_ptr<IGameLevel> active_lvl;
     bool enable_debug;
     std::vector<std::string> debug_messages;
-    std::vector<Animation*> misc_animations;
+    Vector2D<int> camera_offset;
 };
 
 #endif //PIGSGAME_GAMESCREEN_HPP

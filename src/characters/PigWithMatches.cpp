@@ -90,7 +90,7 @@ void PigWithMatches::update(double elapsedTime)
     this->position += this->velocity * elapsedTime;
 }
 
-void PigWithMatches::run_animation(double elapsedTime)
+void PigWithMatches::run_animation(double elapsedTime, Vector2D<int> const& camera_offset)
 {
     auto current_animation = ([this]() {
         if (this->start_attack) {

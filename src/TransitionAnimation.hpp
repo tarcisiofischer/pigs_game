@@ -22,7 +22,7 @@ public:
     void reset();
     void register_transition_callback(std::function<void()> const& f);
     void run(SDL_Renderer* renderer, double elapsedTime);
-    TransitionAnimationState current_state() const;
+    [[nodiscard]] TransitionAnimationState current_state() const;
 
 private:
     TransitionAnimationState animation_state;

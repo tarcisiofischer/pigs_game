@@ -42,7 +42,7 @@ public:
     void on_after_collision() override;
     void update(double elapsedTime) override;
     void start_taking_damage();
-    void run_animation(double elapsedTime) override;
+    void run_animation(double elapsedTime, Vector2D<int> const& camera_offset) override;
     void think(double elapsedTime);
     int get_dynamic_property(int property_id) const;
     void run_left();

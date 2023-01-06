@@ -50,7 +50,7 @@ void GameScreen::render(SDL_Renderer* renderer, double elapsed_time)
         for (int i = 0; i < ceil(map.width * TILE_SIZE * SCALE_SIZE / 224); ++i) {
             auto offset = Vector2D<int> { 0, 0 };
             auto world_position = Vector2D<int> { 224 * i, 0 };
-            draw_sprite(renderer, assets_registry.forest_background, offset, world_position, Vector2D<int> { 224, 320 }, camera_offset);
+            draw_sprite(renderer, assets_registry.forest_background, offset, world_position, Vector2D<int> { 224, 320 }, this->camera_offset);
         }
     }
 
@@ -63,12 +63,12 @@ void GameScreen::render(SDL_Renderer* renderer, double elapsed_time)
                 auto offset = Vector2D<int> { TILE_SIZE * (tile_id % 4), TILE_SIZE * int(floor(tile_id / 4)) };
                 auto world_position = Vector2D<int> { TILE_SIZE * j + shake.x, TILE_SIZE * (map.height - i - 1) + shake.y };
                 auto size = Vector2D<int> { TILE_SIZE, TILE_SIZE };
-                draw_sprite(renderer, assets_registry.tileset, offset, world_position, size, camera_offset);
+                draw_sprite(renderer, assets_registry.tileset, offset, world_position, size, this->camera_offset);
 
                 if (this->enable_debug) {
                     SDL_SetRenderDrawColor(renderer, 255, 0, 0, 40);
                     if (tile_id != 0) {
-                        auto camera_position = to_camera_position(world_position, size, camera_offset);
+                        auto camera_position = to_camera_position(world_position, size, this->camera_offset);
                         auto dstrect = SDL_Rect { camera_position.x, camera_position.y, SCALE_SIZE * size.x,
                                                   SCALE_SIZE * size.y };
                         SDL_RenderFillRect(renderer, &dstrect);
@@ -78,8 +78,13 @@ void GameScreen::render(SDL_Renderer* renderer, double elapsed_time)
         }
     }
 
+    for (auto& game_character : game_characters) {
+        game_character->run_animation(elapsed_time, this->camera_offset);
+    }
+
     // HUD
     if (player) {
+        // Lifebar background
         {
             auto offset = Vector2D<int> { 0, 0 };
             auto size = Vector2D<int> { 66, 34 };
@@ -87,6 +92,7 @@ void GameScreen::render(SDL_Renderer* renderer, double elapsed_time)
             draw_static_sprite(renderer, assets_registry.lifebar, offset, static_camera_position, size);
         }
 
+        // Lifebar hearts
         auto offset = Vector2D<int> { 0, 0 };
         auto size = Vector2D<int> { 18, 14 };
         for (int i = 0; i < player->life; ++i) {
@@ -95,23 +101,12 @@ void GameScreen::render(SDL_Renderer* renderer, double elapsed_time)
         }
     }
 
-    for (auto& misc_animation : misc_animations) {
-//        misc_animation->run(renderer, elapsed_time);
-
-//        SDL_Renderer* renderer, double elapsedTime, int face, Vector2D<int> const& world_position,
-//                Vector2D<int> const& sprite_offset, Vector2D<int> const& camera_offset
-    }
-
-    for (auto& game_character : game_characters) {
-        game_character->run_animation(elapsed_time);
-    }
-
     if (this->enable_debug) {
         int mousex = 0;
         int mousey = 0;
         SDL_GetMouseState(&mousex, &mousey);
         this->debug_messages.push_back("Mouse (Camera ): " + std::to_string(mousex) + ", " + std::to_string(mousey));
-        auto world_mouse = to_world_position(Vector2D<int> { mousex, mousey }, Vector2D<int> { 0, 0 }, camera_offset);
+        auto world_mouse = to_world_position(Vector2D<int> { mousex, mousey }, Vector2D<int> { 0, 0 }, this->camera_offset);
         this->debug_messages.push_back("Mouse (World): " + std::to_string(int(world_mouse.x)) + ", " + std::to_string(int(world_mouse.y)));
 
         auto r = (Uint8)(0);
@@ -134,7 +129,7 @@ void GameScreen::render(SDL_Renderer* renderer, double elapsed_time)
         for (auto& game_character : game_characters) {
             auto const& collision_region = game_character->get_collision_region_information().collision_region;
             auto camera_position = to_camera_position(Vector2D<int> { int(collision_region.x), int(collision_region.y) },
-                                                      Vector2D<int> { int(collision_region.w), int(collision_region.h) }, camera_offset);
+                                                      Vector2D<int> { int(collision_region.w), int(collision_region.h) }, this->camera_offset);
             auto collision_rect = to_sdl_rect(Region2D<int> { camera_position.x, camera_position.y, int(SCALE_SIZE * collision_region.w),
                                                               int(SCALE_SIZE * collision_region.h) });
             SDL_RenderFillRect(renderer, &collision_rect);
@@ -158,8 +153,8 @@ void GameScreen::render(SDL_Renderer* renderer, double elapsed_time)
         auto user_centered_camera_y = position.y - SCREEN_HEIGHT / (2 * SCALE_SIZE);
         auto camera_max_y = std::max(0, map.height * TILE_SIZE - SCREEN_HEIGHT / 2);
 
-        camera_offset.x = std::max(camera_min_x, std::min(user_centered_camera_x, camera_max_x));
-        camera_offset.y = std::max(camera_min_y, std::min(user_centered_camera_y, camera_max_y));
+        this->camera_offset.x = std::max(camera_min_x, std::min(user_centered_camera_x, camera_max_x));
+        this->camera_offset.y = std::max(camera_min_y, std::min(user_centered_camera_y, camera_max_y));
     }
 }
 

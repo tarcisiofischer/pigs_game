@@ -30,7 +30,7 @@ public:
     void handle_collision(CollisionType const& type, CollisionSide const& side) override;
     void on_after_collision() override;
     void trigger_attack();
-    void run_animation(double elapsedTime) override;
+    void run_animation(double elapsedTime, Vector2D<int> const& camera_offset) override;
 
 public:
     std::map<int, Animation> animations;

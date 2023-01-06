@@ -7,7 +7,7 @@
 class WindowShaker {
 public:
     WindowShaker();
-    Vector2D<int> get_shake() const;
+    [[nodiscard]] Vector2D<int> get_shake() const;
     void start_shake();
     void update(double elapsed_time);
 

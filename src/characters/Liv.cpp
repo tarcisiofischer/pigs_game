@@ -287,7 +287,7 @@ void Liv::start_taking_damage()
     }
 }
 
-void Liv::run_animation(double elapsedTime)
+void Liv::run_animation(double elapsedTime, Vector2D<int> const& camera_offset)
 {
     auto current_animation = ([this]() {
         if (this->is_dead) {

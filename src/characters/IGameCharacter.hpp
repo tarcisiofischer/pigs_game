@@ -8,7 +8,7 @@
 class IGameCharacter {
 public:
     virtual void update(double elapsedTime) = 0;
-    virtual void run_animation(double elapsedTime) = 0;
+    virtual void run_animation(double elapsedTime, Vector2D<int> const& camera_offset) = 0;
     virtual void set_position(double x, double y) = 0;
     virtual Vector2D<double> get_position() const = 0;
     virtual Vector2D<double> get_velocity() const = 0;

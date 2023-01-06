@@ -50,7 +50,7 @@ public:
     void register_on_dead_callback(std::function<void()> const& f);
     void update(double elapsedTime) override;
     void start_taking_damage();
-    void run_animation(double elapsedTime) override;
+    void run_animation(double elapsedTime, Vector2D<int> const& camera_offset) override;
     [[nodiscard]] Region2D<double> attack_region() const;
 
 private:

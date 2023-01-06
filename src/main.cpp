@@ -1,9 +1,5 @@
 #include <GameHandler.hpp>
-#include <Vector2D.hpp>
 #include <sdl_wrappers.hpp>
-
-// TODO PIG-12: Initialize the camera on main (avoid global)
-Vector2D<int> camera_offset { 0, 0 };
 
 int main()
 {

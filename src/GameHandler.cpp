@@ -7,9 +7,6 @@
 #include <screens/GameScreen.hpp>
 #include <logging.hpp>
 
-// TODO PIG-12: Initialize the camera on main (avoid global)
-extern Vector2D<int> camera_offset;
-
 namespace {
     SDL_Window* create_window()
     {

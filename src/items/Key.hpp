@@ -17,7 +17,7 @@ public:
     Key(SDL_Renderer* renderer, double pos_x, double pos_y);
 
     void update(double elapsedTime) override;
-    void run_animation(double elapsedTime) override;
+    void run_animation(double elapsedTime, Vector2D<int> const& camera_offset) override;
     void set_position(double x, double y) override;
     Vector2D<double> get_position() const override;
     Vector2D<double> get_velocity() const override;

@@ -63,7 +63,7 @@ public:
         this->position += this->velocity * elapsedTime;
     }
 
-    void run_animation(double elapsedTime) override
+    void run_animation(double elapsedTime, Vector2D<int> const& camera_offset) override
     {
         if (this->state == CannonBallState::active) {
             this->animations.at(IDLE_ANIMATION)

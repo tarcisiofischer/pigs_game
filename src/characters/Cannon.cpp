@@ -1,7 +1,5 @@
 #include <characters/Cannon.hpp>
 
-extern Vector2D<int> camera_offset;
-
 Cannon::Cannon(SDL_Renderer* renderer, double pos_x, double pos_y, int face)
     : face(face)
     , position { pos_x, pos_y }
@@ -81,7 +79,7 @@ void Cannon::trigger_attack()
     }
 }
 
-void Cannon::run_animation(double elapsedTime)
+void Cannon::run_animation(double elapsedTime, Vector2D<int> const& camera_offset)
 {
     auto current_animation = ([this]() {
         if (this->is_attacking) {
