@@ -133,13 +133,13 @@ set_target_properties(PigsGame
     PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/../FreeMono.ttf DESTINATION ${CMAKE_BINARY_DIR}/bin/FreeMono.ttf)
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/../assets/ DESTINATION ${CMAKE_BINARY_DIR}/bin/assets/)
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/../maps/ DESTINATION ${CMAKE_BINARY_DIR}/bin/maps/)
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/../../FreeMono.ttf DESTINATION ${CMAKE_BINARY_DIR}/bin/FreeMono.ttf)
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/../../assets/ DESTINATION ${CMAKE_BINARY_DIR}/bin/assets/)
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/../../maps/ DESTINATION ${CMAKE_BINARY_DIR}/bin/maps/)
 
 set_target_properties(MapEditor
     PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/tools"
 )
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/../FreeMono.ttf DESTINATION ${CMAKE_BINARY_DIR}/tools/FreeMono.ttf)
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/../assets/ DESTINATION ${CMAKE_BINARY_DIR}/tools/assets/)
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/../../FreeMono.ttf DESTINATION ${CMAKE_BINARY_DIR}/tools/FreeMono.ttf)
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/../../assets/ DESTINATION ${CMAKE_BINARY_DIR}/tools/assets/)
