@@ -2,6 +2,7 @@ find_package(SDL2 REQUIRED)
 find_package(SDL2_image REQUIRED)
 find_package(SDL2_ttf REQUIRED)
 find_package(SDL2_mixer REQUIRED)
+find_package(pybind11 REQUIRED)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -97,38 +98,13 @@ add_executable(
     ${SOURCE_FILES}
 )
 
-add_executable(
-    MapEditor
-
-    map_editor.cpp
-    constants.hpp
-    drawing.cpp
-    drawing.hpp
-    io.cpp
-    io.hpp
-    sdl_wrappers.cpp
-    sdl_wrappers.hpp
-    GameMap.cpp
-    GameMap.hpp
-
-    collision/aabb.hpp
-)
-
-include_directories(
-    ${SDL2_INCLUDE_DIRS}
-    ${SDL2_IMAGE_INCLUDE_DIRS}
-    ${SDL2TTF_INCLUDE_DIRS}
-    ${SDL2mixer_INCLUDE_DIRS}
-)
 target_link_libraries(
 PigsGame
-    ${SDL2_LIBRARIES}
-    ${SDL2_IMAGE_LIBRARIES}
-    ${SDL2TTF_LIBRARIES}
-    ${SDL2_MIXER_LIBRARIES}
+    SDL2::SDL2
+    SDL2_image::SDL2_image
+    SDL2_ttf::SDL2_ttf
+    SDL2_mixer::SDL2_mixer
 )
-target_link_libraries(MapEditor ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBRARIES} ${SDL2TTF_LIBRARIES})
-
 set_target_properties(PigsGame
     PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
@@ -137,9 +113,21 @@ file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/../../FreeMono.ttf DESTINATION ${CMAKE_BIN
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/../../assets/ DESTINATION ${CMAKE_BINARY_DIR}/bin/assets/)
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/../../maps/ DESTINATION ${CMAKE_BINARY_DIR}/bin/maps/)
 
-set_target_properties(MapEditor
-    PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/tools"
+add_library(
+    pyPigs
+        SHARED
+        pyPigs.cpp
 )
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/../../FreeMono.ttf DESTINATION ${CMAKE_BINARY_DIR}/tools/FreeMono.ttf)
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/../../assets/ DESTINATION ${CMAKE_BINARY_DIR}/tools/assets/)
+
+target_link_libraries(
+    pyPigs
+        PRIVATE
+        pybind11::module
+)
+
+set_target_properties(
+    pyPigs
+        PROPERTIES
+        OUTPUT_NAME pyPigs
+        PREFIX ""
+)

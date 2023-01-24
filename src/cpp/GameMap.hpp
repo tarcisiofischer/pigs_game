@@ -16,7 +16,9 @@ struct InteractableInfo {
 struct GameMap {
     int width;
     int height;
-    Tilemap tilemap;
+    Tilemap tilemap0;
+    Tilemap tilemap1;
+    Tilemap tilemap2;
     std::vector<InteractableInfo> interactables;
 
     GameMap(int width, int height);

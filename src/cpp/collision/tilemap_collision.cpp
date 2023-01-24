@@ -44,7 +44,7 @@ TileCollisionInformation tile_info_from_position(GameMap const& map, Vector2D<do
     auto collision_type = CollisionType::NO_COLLISION;
     auto collision_callback = std::function<void()>();
 
-    auto tile_id = map.tilemap[map.height - i - 1][j];
+    auto tile_id = map.tilemap0[map.height - i - 1][j];
     if (tile_id != 0) {
         is_collideable = true;
         try {

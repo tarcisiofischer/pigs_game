@@ -55,11 +55,11 @@ void GameScreen::render(SDL_Renderer* renderer, double elapsed_time)
     }
 
     auto shake = this->game_handler.get_window_shaker().get_shake();
-    for (int i = 0; i < map.height; ++i) {
-        for (int j = 0; j < map.width; ++j) {
-            // Collision layer
-            {
-                auto tile_id = map.tilemap[i][j];
+
+    auto drawTileLayer = [&](auto const& tilemap) {
+        for (int i = 0; i < map.height; ++i) {
+            for (int j = 0; j < map.width; ++j) {
+                auto tile_id = tilemap[i][j];
                 auto offset = Vector2D<int> { TILE_SIZE * (tile_id % 4), TILE_SIZE * int(floor(tile_id / 4)) };
                 auto world_position = Vector2D<int> { TILE_SIZE * j + shake.x, TILE_SIZE * (map.height - i - 1) + shake.y };
                 auto size = Vector2D<int> { TILE_SIZE, TILE_SIZE };
@@ -76,11 +76,15 @@ void GameScreen::render(SDL_Renderer* renderer, double elapsed_time)
                 }
             }
         }
-    }
+    };
+    drawTileLayer(map.tilemap0); // Tile Collision layer
+    drawTileLayer(map.tilemap1);
 
     for (auto& game_character : game_characters) {
         game_character->run_animation(elapsed_time, this->camera_offset);
     }
+
+    drawTileLayer(map.tilemap2);
 
     // HUD
     if (player) {

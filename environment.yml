@@ -1,0 +1,12 @@
+name: pigs-game-env
+
+dependencies:
+  - libzlib>=1.2.11
+  - python>=3.10
+  - pyqt>=5
+  - pybind11>=2
+  - sdl2>=2.26
+  - sdl2_image>=2.6
+  - libpng>=1.6.37 # Required by SDL2_image
+  - sdl2_ttf>=2.20
+  - sdl2_mixer>=2.6

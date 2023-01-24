@@ -225,7 +225,7 @@ public:
         this->fill_all_button = Button(this->sdl_renderer, { 134, 460 }, { 14, 14 }, PURPLE_COLOR, "assets/map_editor/fill_all.png");
         this->fill_all_button.register_on_mouse_clicked([this](Button&, MouseState const&) {
             if (mouse.just_left_clicked && this->selected_tile != -1 && this->selected_section == BACKGROUND_SECTION) {
-                auto* selected_tilemap = &this->map.tilemap;
+                auto* selected_tilemap = &this->map.tilemap0;
                 for (int i = 0; i < this->map.height; ++i) {
                     for (int j = 0; j < this->map.width; ++j) {
                         (*selected_tilemap)[i][j] = this->selected_tile;
@@ -352,7 +352,7 @@ private:
 
                 // Background
                 {
-                    auto tile_id = map.tilemap[i][j];
+                    auto tile_id = map.tilemap0[i][j];
                     auto offset = Vector2D<int> { TILE_SIZE * (tile_id % 4), TILE_SIZE * int(floor(tile_id / 4)) };
                     auto size = Vector2D<int> { TILE_SIZE, TILE_SIZE };
                         draw_sprite(this->sdl_renderer, this->tileset, offset, world_position, size, camera_offset);
@@ -387,7 +387,7 @@ private:
                         if (this->mouse.left_clicked && this->selected_tile != -1) {
                             if (this->mouse.position.x > LEFT_PANEL_WIDTH) {
                                 if (selected_section == BACKGROUND_SECTION) {
-                                    this->map.tilemap[i][j] = this->selected_tile;
+                                    this->map.tilemap0[i][j] = this->selected_tile;
                                 }
                             }
                         }

@@ -13,7 +13,17 @@ void save_map(GameMap const& map, std::string const& filename)
     bin_write(map.height);
     for (int i = 0; i < map.height; ++i) {
         for (int j = 0; j < map.width; ++j) {
-            bin_write(map.tilemap[i][j]);
+            bin_write(map.tilemap0[i][j]);
+        }
+    }
+    for (int i = 0; i < map.height; ++i) {
+        for (int j = 0; j < map.width; ++j) {
+            bin_write(map.tilemap1[i][j]);
+        }
+    }
+    for (int i = 0; i < map.height; ++i) {
+        for (int j = 0; j < map.width; ++j) {
+            bin_write(map.tilemap2[i][j]);
         }
     }
     bin_write(map.interactables.size());
@@ -40,10 +50,22 @@ GameMap load_map(std::string const& filename)
     bin_read_nextint(map.width);
     bin_read_nextint(map.height);
 
-    map.tilemap = std::vector<std::vector<int>>(map.height, std::vector<int>(map.width));
+    map.tilemap0 = std::vector<std::vector<int>>(map.height, std::vector<int>(map.width));
     for (int i = 0; i < map.height; ++i) {
         for (int j = 0; j < map.width; ++j) {
-            bin_read_nextint(map.tilemap[i][j]);
+            bin_read_nextint(map.tilemap0[i][j]);
+        }
+    }
+    map.tilemap1 = std::vector<std::vector<int>>(map.height, std::vector<int>(map.width));
+    for (int i = 0; i < map.height; ++i) {
+        for (int j = 0; j < map.width; ++j) {
+            bin_read_nextint(map.tilemap1[i][j]);
+        }
+    }
+    map.tilemap2 = std::vector<std::vector<int>>(map.height, std::vector<int>(map.width));
+    for (int i = 0; i < map.height; ++i) {
+        for (int j = 0; j < map.width; ++j) {
+            bin_read_nextint(map.tilemap2[i][j]);
         }
     }
 
