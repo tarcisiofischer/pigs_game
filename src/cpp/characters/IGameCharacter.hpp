@@ -7,6 +7,7 @@
 
 class IGameCharacter {
 public:
+    virtual ~IGameCharacter() = 0;
     virtual void update(double elapsedTime) = 0;
     virtual void run_animation(double elapsedTime, Vector2D<int> const& camera_offset) = 0;
     virtual void set_position(double x, double y) = 0;
@@ -18,5 +19,7 @@ public:
     virtual void on_after_collision() = 0;
     // virtual int get_dynamic_property(int property_id) const = 0;
 };
+
+inline IGameCharacter::~IGameCharacter() {}
 
 #endif
